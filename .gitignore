@@ -75,3 +75,4 @@ coverage/
 # 7. Local Archives
 archive_local/
 temp/
+apps/cli/docs/
