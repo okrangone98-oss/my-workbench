@@ -15,3 +15,19 @@ export function classifyProjectCandidate(
 ): ProjectCandidate {
   return { name, status };
 }
+
+export const ASSET_STATES = [
+  "KEEP",
+  "MERGE",
+  "MOVE",
+  "ARCHIVE",
+  "DELETE_CANDIDATE",
+] as const;
+
+export type AssetState = (typeof ASSET_STATES)[number];
+
+export function isAssetState(value: string): value is AssetState {
+  return (ASSET_STATES as readonly string[]).includes(value);
+}
+
+export * from "./task-domain.js";

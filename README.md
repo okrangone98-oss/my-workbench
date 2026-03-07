@@ -41,6 +41,17 @@ my-workbench/
   package.json
 ```
 
+`packages/` includes `core`, `agents`, `skills`, `integrations`.
+
+## CLI quick start
+
+```bash
+npm run dev:cli
+npm run dev:cli -- classify project kodari-manager source-of-truth
+npm run dev:cli -- classify asset tmp DELETE_CANDIDATE
+npm run boilerplate:init -- --name company-ops-assistant --mode full
+```
+
 ## 운영 원칙 요약
 
 1. 삭제보다 분류를 우선한다.
