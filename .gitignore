@@ -1,0 +1,34 @@
+# Environment / secrets
+.env
+.env.*
+*.env
+
+# Keys / certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+id_rsa
+id_ed25519
+
+# Cloud / service credentials
+*credentials*.json
+service-account*.json
+
+# Local settings
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build outputs
+node_modules/
+dist/
+build/
+coverage/
+
+# Logs
+*.log
