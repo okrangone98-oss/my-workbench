@@ -1,4 +1,4 @@
-# ==========================================
+﻿# ==========================================
 # my-workbench .gitignore
 # ==========================================
 
@@ -14,14 +14,24 @@ ehthumbs_vista.db
 Thumbs.db
 $RECYCLE.BIN/
 
-# 2. Security & Credentials (보안 및 인증 정보 - PRD 필수 원칙)
+# 2. Security & Credentials (보안 및 인증 정보)
 .env
 .env.*
+*.env
 *.pem
 *.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+id_rsa
+id_ed25519
 credentials.json
 client_secret.json
 auth.json
+*credentials*.json
+service-account*.json
 secrets/
 private/
 
@@ -32,7 +42,7 @@ private/
 *.swo
 
 # 4. Programming & Dependencies (언어별 패키지 및 임시 파일)
-# Python (AI 에이전트 및 데이터 처리용)
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -41,18 +51,23 @@ venv/
 env/
 .pytest_cache/
 
-# Node.js (웹 및 프론트엔드 개발용)
+# Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# 5. Logs & Databases (로그 및 로컬 DB 파일)
+# 5. Build Outputs
+build/
+dist/
+coverage/
+
+# 6. Logs & Databases
 *.log
 *.sqlite
 *.sqlite3
 *.db
 
-# 6. Local Archives (GitHub에 올리지 않을 로컬 전용 아카이브 폴더)
+# 7. Local Archives
 archive_local/
 temp/
