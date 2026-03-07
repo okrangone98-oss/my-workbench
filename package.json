@@ -1,0 +1,18 @@
+{
+  "name": "my-work-bench",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @my-work-bench/core && npm run build --workspace @my-work-bench/agents && npm run build --workspace @my-work-bench/skills && npm run build --workspace @my-work-bench/cli",
+    "dev:cli": "npm run dev --workspace @my-work-bench/cli",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
