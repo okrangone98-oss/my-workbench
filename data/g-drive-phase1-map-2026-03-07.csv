@@ -1,0 +1,20 @@
+source_path,decision,target_root,action,reason,applied
+G:\my-work-bench,KEEP,G:\진행중프로젝트,no_move,operation_repository,true
+G:\AI,KEEP,G:\진행중프로젝트,no_move,active_project_candidate,true
+G:\Antigravity,KEEP,G:\진행중프로젝트,no_move,active_project_candidate,true
+G:\개발_202602,KEEP,G:\진행중프로젝트,no_move,active_project_candidate,true
+G:\yangyang-corp_25,KEEP,G:\진행중프로젝트,no_move,company_project_candidate,true
+G:\UserFolders,KEEP,G:\진행중프로젝트,no_move,user_workspace_candidate,true
+G:\오대훈 개인자료,KEEP,G:\장기보관자료,no_move,personal_core_data,true
+G:\MigratedData,ARCHIVE,G:\장기보관자료,no_move,migrated_archive_candidate,true
+G:\NPKI,ARCHIVE,G:\장기보관자료,no_move,sensitive_certificate_data,true
+G:\전옥랑,ARCHIVE,G:\장기보관자료,no_move,personal_archive_candidate,true
+G:\양양군농촌활성화센터,ARCHIVE,G:\장기보관자료,no_move,legacy_company_data,true
+G:\Wondershare,ARCHIVE,G:\장기보관자료,no_move,app_data_archive_candidate,true
+G:\Adobe Ai,DC,Photoshop 2020,ARCHIVE,G:\장기보관자료,no_move,legacy_installation_bundle,true
+G:\KakaoTalk,ARCHIVE,G:\장기보관자료,no_move,legacy_app_data,true
+G:\Mame,ARCHIVE,G:\장기보관자료,no_move,legacy_app_data,true
+G:\HuggingFaceCache,MOVE,G:\최근3개월검토,no_move,cache_policy_review_required,true
+G:\tmp,DELETE_CANDIDATE,G:\최근3개월검토,no_move,kept_as_reference_by_user,true
+G:\공동체 종합시스템_복사본,DELETE_CANDIDATE,G:\최근3개월검토,no_move,kept_as_reference_by_user,true
+G:\docker_data,KEEP,G:\진행중프로젝트,no_move,runtime_data_keep,true

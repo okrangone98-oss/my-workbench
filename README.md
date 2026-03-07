@@ -29,6 +29,7 @@
 - [역할기반스킬초안](./docs/역할기반스킬초안.md)
 - [코어추출매핑_2026-03-07](./docs/코어추출매핑_2026-03-07.md)
 - [민감정보분리전략](./docs/민감정보분리전략.md)
+- [G드라이브1차적용결과_2026-03-07](./docs/G드라이브1차적용결과_2026-03-07.md)
 
 ## 현재 구조(v1)
 
@@ -51,6 +52,7 @@ npm run dev:cli -- classify project kodari-manager source-of-truth
 npm run dev:cli -- classify asset tmp DELETE_CANDIDATE
 npm run dev:cli -- migrate:kodari
 npm run boilerplate:init -- --name company-ops-assistant --mode full
+pwsh -File scripts/apply-g-drive-phase1.ps1
 ```
 
 ## 운영 원칙 요약

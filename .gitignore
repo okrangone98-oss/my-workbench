@@ -71,6 +71,7 @@ coverage/
 *.sqlite
 *.sqlite3
 *.db
+*.local-db.json
 
 # 7. Local Archives
 archive_local/

@@ -3,10 +3,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { listAgentNames } from "@my-work-bench/agents";
 import {
+  createTask,
   classifyProjectCandidate,
   isAssetState,
+  listRecentTasks,
   type ProjectCandidateStatus,
 } from "@my-work-bench/core";
+import { LocalJsonTaskRepository } from "@my-work-bench/integrations";
 
 const PROJECT_STATES: ProjectCandidateStatus[] = [
   "source-of-truth",
@@ -21,6 +24,8 @@ function printHelp(): void {
   console.log("  npm run dev:cli -- classify project <name> <status>");
   console.log("  npm run dev:cli -- classify asset <name> <state>");
   console.log("  npm run dev:cli -- migrate:kodari [rootPath]");
+  console.log("  npm run dev:cli -- task:create <title>");
+  console.log("  npm run dev:cli -- task:list");
   console.log("");
   console.log("Project status:", PROJECT_STATES.join(", "));
   console.log("Asset state: KEEP, MERGE, MOVE, ARCHIVE, DELETE_CANDIDATE");
@@ -138,6 +143,40 @@ function runMigrateKodari(args: string[]): void {
   console.log(`Created: ${reportPath}`);
 }
 
+function getLocalTaskRepository(): LocalJsonTaskRepository {
+  const appDir = path.dirname(fileURLToPath(import.meta.url));
+  const repoRoot = path.resolve(appDir, "..", "..", "..");
+  const dbPath = path.join(repoRoot, "data", "tasks.local-db.json");
+  return new LocalJsonTaskRepository(dbPath);
+}
+
+async function runTaskCreate(args: string[]): Promise<void> {
+  const title = (args[0] || "").trim();
+  if (!title) {
+    console.error("task:create requires a title.");
+    process.exitCode = 1;
+    return;
+  }
+  const repository = getLocalTaskRepository();
+  const task = await createTask(repository, { title });
+  await repository.appendActivity({
+    type: "task_created",
+    message: `Task created: ${task.title}`,
+    actor: "cli",
+  });
+  console.log(JSON.stringify(task, null, 2));
+}
+
+async function runTaskList(): Promise<void> {
+  const repository = getLocalTaskRepository();
+  const tasks = await listRecentTasks(repository, 20);
+  if (tasks.length === 0) {
+    console.log("No tasks yet.");
+    return;
+  }
+  console.log(JSON.stringify(tasks, null, 2));
+}
+
 function readFileNames(targetDir: string): string[] {
   if (!fs.existsSync(targetDir)) return [];
   return fs
@@ -156,7 +195,7 @@ function readDirectoryNames(targetDir: string): string[] {
     .sort();
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const [, , command, ...args] = process.argv;
   if (!command) {
     runDefault();
@@ -171,9 +210,21 @@ function main(): void {
     runMigrateKodari(args);
     return;
   }
+  if (command === "task:create") {
+    await runTaskCreate(args);
+    return;
+  }
+  if (command === "task:list") {
+    await runTaskList();
+    return;
+  }
 
   printHelp();
   process.exitCode = 1;
 }
 
-main();
+main().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  process.exitCode = 1;
+});

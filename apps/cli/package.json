@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@my-work-bench/agents": "0.1.0",
-    "@my-work-bench/core": "0.1.0"
+    "@my-work-bench/core": "0.1.0",
+    "@my-work-bench/integrations": "0.1.0"
   }
 }
