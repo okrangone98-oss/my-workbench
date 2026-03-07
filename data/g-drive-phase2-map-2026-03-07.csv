@@ -1,0 +1,17 @@
+path,category,decision,target,action,status
+G:\진행중프로젝트\개인프로젝트\AI,personal_project,KEEP,G:\진행중프로젝트\개인프로젝트,no_move,applied
+G:\진행중프로젝트\개인프로젝트\Antigravity,personal_project,KEEP,G:\진행중프로젝트\개인프로젝트,no_move,applied
+G:\진행중프로젝트\개인프로젝트\개발_202602,personal_project,KEEP,G:\진행중프로젝트\개인프로젝트,no_move,applied
+G:\진행중프로젝트\개인프로젝트\yangyang-corp_25,personal_project,KEEP,G:\진행중프로젝트\개인프로젝트,no_move,applied
+G:\진행중프로젝트\회사프로젝트\양양군농촌활성화센터_회사,company_project,KEEP,G:\진행중프로젝트\회사프로젝트,no_move,applied
+G:\my-work-bench,personal_project,KEEP,G:\,no_move,applied
+G:\docker_data,system_runtime,KEEP,G:\,no_move,applied
+G:\UserFolders,personal_workspace,KEEP,G:\,no_move,applied
+G:\오대훈 개인자료,personal_archive,KEEP,G:\,no_move,applied
+G:\과거자료,past_data,EXCLUDE,G:\과거자료,no_touch,applied
+G:\장기보관자료,past_data,EXCLUDE,G:\장기보관자료,no_touch,applied
+G:\tmp,reference_candidate,DELETE_CANDIDATE,G:\최근3개월검토\불필요후보,hold_reference,pending
+G:\공동체 종합시스템_복사본,reference_candidate,DELETE_CANDIDATE,G:\최근3개월검토\불필요후보,hold_reference,pending
+G:\HuggingFaceCache,cache_candidate,MOVE,G:\최근3개월검토\불필요후보,review_then_move,pending
+G:\MigratedData,archive_candidate,ARCHIVE,G:\장기보관자료,review_then_move,pending
+G:\Wondershare,archive_candidate,ARCHIVE,G:\장기보관자료,review_then_move,pending
