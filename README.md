@@ -54,6 +54,8 @@ npm run dev:cli -- classify project kodari-manager source-of-truth
 npm run dev:cli -- classify asset tmp DELETE_CANDIDATE
 npm run dev:cli -- migrate:kodari
 npm run dev:cli -- scan:folders G:\
+npm run dev:cli -- apply:scan
+npm run dev:cli -- apply:scan MOVE --apply
 npm run boilerplate:init -- --name company-ops-assistant --mode full
 pwsh -File scripts/apply-g-drive-phase1.ps1
 ```

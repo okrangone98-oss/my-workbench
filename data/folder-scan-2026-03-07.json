@@ -1,75 +1,11 @@
 [
   {
-    "name": "@@trjHD",
-    "path": "G:\\@@trjHD",
-    "lastModified": "2022-07-05T02:46:08.398Z",
-    "suggestedState": "KEEP",
-    "suggestedBucket": "active-project",
-    "reason": "default_keep_pending_manual_review"
-  },
-  {
-    "name": "$RECYCLE.BIN",
-    "path": "G:\\$RECYCLE.BIN",
-    "lastModified": "2026-02-21T19:17:15.976Z",
-    "suggestedState": "KEEP",
-    "suggestedBucket": "active-project",
-    "reason": "default_keep_pending_manual_review"
-  },
-  {
-    "name": "공동체 종합시스템_복사본",
-    "path": "G:\\공동체 종합시스템_복사본",
-    "lastModified": "2026-02-26T15:24:38.906Z",
-    "suggestedState": "KEEP",
-    "suggestedBucket": "active-project",
-    "reason": "default_keep_pending_manual_review"
-  },
-  {
-    "name": "과거자료",
-    "path": "G:\\과거자료",
-    "lastModified": "2026-03-07T06:31:42.156Z",
-    "suggestedState": "ARCHIVE",
-    "suggestedBucket": "do-not-touch",
-    "reason": "sensitive_or_historical_data"
-  },
-  {
-    "name": "장기보관자료",
-    "path": "G:\\장기보관자료",
-    "lastModified": "2026-03-07T06:26:44.743Z",
-    "suggestedState": "ARCHIVE",
-    "suggestedBucket": "do-not-touch",
-    "reason": "sensitive_or_historical_data"
-  },
-  {
-    "name": "정리운영로그",
-    "path": "G:\\정리운영로그",
-    "lastModified": "2026-03-07T06:26:44.776Z",
-    "suggestedState": "KEEP",
-    "suggestedBucket": "active-project",
-    "reason": "default_keep_pending_manual_review"
-  },
-  {
-    "name": "진행중프로젝트",
-    "path": "G:\\진행중프로젝트",
-    "lastModified": "2026-03-07T06:23:00.298Z",
-    "suggestedState": "KEEP",
-    "suggestedBucket": "active-project",
-    "reason": "default_keep_pending_manual_review"
-  },
-  {
-    "name": "최근3개월검토",
-    "path": "G:\\최근3개월검토",
-    "lastModified": "2026-03-07T06:23:00.349Z",
-    "suggestedState": "KEEP",
-    "suggestedBucket": "active-project",
-    "reason": "default_keep_pending_manual_review"
-  },
-  {
     "name": "docker_data",
     "path": "G:\\docker_data",
     "lastModified": "2026-03-02T14:17:13.906Z",
     "suggestedState": "KEEP",
     "suggestedBucket": "active-project",
-    "reason": "default_keep_pending_manual_review"
+    "reason": "active_project_workspace"
   },
   {
     "name": "my-work-bench",
@@ -94,5 +30,53 @@
     "suggestedState": "KEEP",
     "suggestedBucket": "active-project",
     "reason": "active_project_workspace"
+  },
+  {
+    "name": "공동체 종합시스템_복사본",
+    "path": "G:\\공동체 종합시스템_복사본",
+    "lastModified": "2026-02-26T15:24:38.906Z",
+    "suggestedState": "KEEP",
+    "suggestedBucket": "active-project",
+    "reason": "default_keep_pending_manual_review"
+  },
+  {
+    "name": "과거자료",
+    "path": "G:\\과거자료",
+    "lastModified": "2026-03-07T06:31:42.156Z",
+    "suggestedState": "ARCHIVE",
+    "suggestedBucket": "do-not-touch",
+    "reason": "sensitive_or_historical_data"
+  },
+  {
+    "name": "장기보관자료",
+    "path": "G:\\장기보관자료",
+    "lastModified": "2026-03-07T06:26:44.743Z",
+    "suggestedState": "ARCHIVE",
+    "suggestedBucket": "long-term-archive",
+    "reason": "legacy_or_migrated_data"
+  },
+  {
+    "name": "정리운영로그",
+    "path": "G:\\정리운영로그",
+    "lastModified": "2026-03-07T06:26:44.776Z",
+    "suggestedState": "ARCHIVE",
+    "suggestedBucket": "do-not-touch",
+    "reason": "sensitive_or_historical_data"
+  },
+  {
+    "name": "진행중프로젝트",
+    "path": "G:\\진행중프로젝트",
+    "lastModified": "2026-03-07T06:23:00.298Z",
+    "suggestedState": "KEEP",
+    "suggestedBucket": "active-project",
+    "reason": "active_project_workspace"
+  },
+  {
+    "name": "최근3개월검토",
+    "path": "G:\\최근3개월검토",
+    "lastModified": "2026-03-07T06:23:00.349Z",
+    "suggestedState": "ARCHIVE",
+    "suggestedBucket": "do-not-touch",
+    "reason": "sensitive_or_historical_data"
   }
 ]

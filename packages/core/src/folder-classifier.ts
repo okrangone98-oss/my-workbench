@@ -11,13 +11,15 @@ export interface FolderClassification {
 }
 
 function includesAny(name: string, patterns: string[]): boolean {
-  return patterns.some((p) => name.includes(p));
+  return patterns.some((pattern) => name.includes(pattern));
 }
 
 export function classifyFolderByName(name: string): FolderClassification {
   const lower = name.toLowerCase();
 
-  if (includesAny(lower, ["tmp", "cache", "huggingfacecache"])) {
+  if (
+    includesAny(lower, ["tmp", "cache", "huggingfacecache", "temp", "임시"])
+  ) {
     return {
       suggestedState: "MOVE",
       suggestedBucket: "review-candidate",
@@ -25,7 +27,9 @@ export function classifyFolderByName(name: string): FolderClassification {
     };
   }
 
-  if (includesAny(lower, ["migrated", "wondershare", "archive"])) {
+  if (
+    includesAny(lower, ["migrated", "wondershare", "archive", "이관", "보관"])
+  ) {
     return {
       suggestedState: "ARCHIVE",
       suggestedBucket: "long-term-archive",
@@ -40,7 +44,13 @@ export function classifyFolderByName(name: string): FolderClassification {
       "antigravity",
       "yangyang-corp_25",
       "userfolders",
-    ]) || lower.includes("개발_")
+      "개발_202602",
+      "진행중프로젝트",
+      "양양군농촌활성화센터_회사",
+      "오대훈 개인자료",
+      "docker_data",
+      "photoshop 2020",
+    ])
   ) {
     return {
       suggestedState: "KEEP",
@@ -50,9 +60,13 @@ export function classifyFolderByName(name: string): FolderClassification {
   }
 
   if (
-    includesAny(lower, ["npki"]) ||
-    lower.includes("과거자료") ||
-    lower.includes("장기보관자료")
+    includesAny(lower, [
+      "npki",
+      "과거자료",
+      "장기보관자료",
+      "정리운영로그",
+      "최근3개월검토",
+    ])
   ) {
     return {
       suggestedState: "ARCHIVE",
