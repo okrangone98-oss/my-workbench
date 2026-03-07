@@ -1,0 +1,6 @@
+path,decision,target,action,status,note
+G:\HuggingFaceCache,MOVE,G:\최근3개월검토\불필요후보\HuggingFaceCache,move,applied,cache_to_review_bucket
+G:\MigratedData,ARCHIVE,G:\장기보관자료\정리이관\MigratedData,move,applied,migrated_archive
+G:\Wondershare,ARCHIVE,G:\장기보관자료\정리이관\Wondershare,move,applied,legacy_app_data
+G:\tmp,DELETE_CANDIDATE,G:\tmp,no_move,kept,reference_by_user
+G:\공동체 종합시스템_복사본,DELETE_CANDIDATE,G:\공동체 종합시스템_복사본,no_move,kept,reference_by_user
