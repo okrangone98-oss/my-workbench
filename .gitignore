@@ -32,6 +32,10 @@ client_secret.json
 auth.json
 *credentials*.json
 service-account*.json
+token.json
+paypal_token.json
+*.token.json
+*.secret.json
 secrets/
 private/
 
