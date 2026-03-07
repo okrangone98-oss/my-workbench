@@ -2,10 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   applyTaskPatch,
+  calculateDashboardSummary,
   normalizeCreateTaskInput,
   type CreateTaskInput,
   type DashboardActivity,
-  type DashboardSummary,
   type DashboardTask,
 } from "@my-work-bench/core";
 import type { TaskRepository } from "./types.js";
@@ -59,30 +59,9 @@ export class LocalJsonTaskRepository implements TaskRepository {
     return db.tasks[index];
   }
 
-  public async getSummary(): Promise<DashboardSummary> {
+  public async getSummary() {
     const tasks = this.readDb().tasks;
-    if (tasks.length === 0) {
-      return {
-        totalTasks: 0,
-        completed: 0,
-        inProgress: 0,
-        urgent: 0,
-        averageProgress: 0,
-      };
-    }
-    const completed = tasks.filter((task) => task.status === "completed").length;
-    const inProgress = tasks.filter(
-      (task) => task.status === "in-progress",
-    ).length;
-    const urgent = tasks.filter((task) => task.priority === "urgent").length;
-    const progressSum = tasks.reduce((sum, task) => sum + task.progress, 0);
-    return {
-      totalTasks: tasks.length,
-      completed,
-      inProgress,
-      urgent,
-      averageProgress: Math.round(progressSum / tasks.length),
-    };
+    return calculateDashboardSummary(tasks);
   }
 
   public async listActivities(limit = 10): Promise<DashboardActivity[]> {

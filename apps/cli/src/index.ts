@@ -38,13 +38,13 @@ const gDriveRoot = "G:\\";
 const dataDir = path.join(repoRoot, "data");
 const docsDir = path.join(repoRoot, "docs");
 const localDbPath = path.join(dataDir, "tasks.local-db.json");
-const organizeLogDir = "G:\\정리운영로그";
+const organizeLogDir = path.join(gDriveRoot, "정리운영로그");
 const defaultKodariPath = path.join(
   gDriveRoot,
-  "\uC9C4\uD589\uC911\uD504\uB85C\uC81D\uD2B8",
-  "\uAC1C\uC778\uD504\uB85C\uC81D\uD2B8",
-  "\uAC1C\uBC1C_202602",
-  "\uCF54\uB2E4\uB9AC\uBD80\uC7A5",
+  "진행중프로젝트",
+  "개인프로젝트",
+  "개발_202602",
+  "코다리부장",
 );
 
 const protectedNames = new Set<string>([
@@ -52,11 +52,11 @@ const protectedNames = new Set<string>([
   "System Volume Information",
   "@@trjHD",
   "found.000",
-  "\uACFC\uAC70\uC790\uB8CC",
-  "\uC7A5\uAE30\uBCF4\uAD00\uC790\uB8CC",
-  "\uC815\uB9AC\uC6B4\uC601\uB85C\uADF8",
-  "\uC9C4\uD589\uC911\uD504\uB85C\uC81D\uD2B8",
-  "\uCD5C\uADFC3\uAC1C\uC6D4\uAC80\uD1A0",
+  "과거자료",
+  "장기보관자료",
+  "정리운영로그",
+  "진행중프로젝트",
+  "최근3개월검토",
   "my-work-bench",
 ]);
 
@@ -85,6 +85,10 @@ function writeJsonFile(filePath: string, value: unknown): void {
   writeTextFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function cleanCliText(value: string): string {
+  return value.replace(/\^/g, "").trim();
+}
+
 function printHelp(): void {
   console.log("my-work-bench CLI");
   console.log("");
@@ -93,6 +97,7 @@ function printHelp(): void {
   console.log("  classify asset <name> <KEEP|MERGE|MOVE|ARCHIVE|DELETE_CANDIDATE>");
   console.log("  task:create <title>");
   console.log("  task:list");
+  console.log("  task:dashboard");
   console.log("  migrate:kodari [rootPath]");
   console.log("  scan:folders [rootPath]");
   console.log("  apply:scan [state] [--apply] [scanJsonPath]");
@@ -132,35 +137,33 @@ function isProtectedPath(targetPath: string): boolean {
 }
 
 function shouldSkipScanFolder(fullPath: string, name: string): boolean {
-  if (isProtectedName(name) && ![
-    "\uACFC\uAC70\uC790\uB8CC",
-    "\uC7A5\uAE30\uBCF4\uAD00\uC790\uB8CC",
-    "\uC815\uB9AC\uC6B4\uC601\uB85C\uADF8",
-    "\uC9C4\uD589\uC911\uD504\uB85C\uC81D\uD2B8",
-    "\uCD5C\uADFC3\uAC1C\uC6D4\uAC80\uD1A0",
-  ].includes(name)) {
+  if (
+    isProtectedName(name) &&
+    ![
+      "과거자료",
+      "장기보관자료",
+      "정리운영로그",
+      "진행중프로젝트",
+      "최근3개월검토",
+    ].includes(name)
+  ) {
     return true;
   }
 
   const normalized = path.normalize(fullPath);
-  return normalized === path.normalize(dataDir) || normalized === path.normalize(docsDir);
+  return (
+    normalized === path.normalize(dataDir) ||
+    normalized === path.normalize(docsDir)
+  );
 }
 
 function targetDirForBucket(bucket: ScanBucket): string | null {
   if (bucket === "review-candidate") {
-    return path.join(
-      gDriveRoot,
-      "\uCD5C\uADFC3\uAC1C\uC6D4\uAC80\uD1A0",
-      "\uC790\uB3D9\uBD84\uB958",
-    );
+    return path.join(gDriveRoot, "최근3개월검토", "자동분류");
   }
 
   if (bucket === "long-term-archive") {
-    return path.join(
-      gDriveRoot,
-      "\uC7A5\uAE30\uBCF4\uAD00\uC790\uB8CC",
-      "\uC790\uB3D9\uBD84\uB958",
-    );
+    return path.join(gDriveRoot, "장기보관자료", "자동분류");
   }
 
   return null;
@@ -172,10 +175,9 @@ function buildMovePlan(entry: ScanEntry): MovePlan | null {
     return null;
   }
 
-  const folderName = path.basename(entry.path);
   return {
     sourcePath: entry.path,
-    targetPath: path.join(targetBase, folderName),
+    targetPath: path.join(targetBase, path.basename(entry.path)),
     state: entry.suggestedState,
     bucket: entry.suggestedBucket,
     reason: entry.reason,
@@ -241,7 +243,9 @@ function formatPlanMarkdown(
     return `| \`${plan.sourcePath}\` | \`${plan.targetPath}\` | \`${plan.state}\` | \`${plan.bucket}\` | \`${plan.reason}\` |`;
   });
 
-  return header.concat(rows.length > 0 ? rows : ["| none | none | none | none | none |"]).join("\n");
+  return header
+    .concat(rows.length > 0 ? rows : ["| none | none | none | none | none |"])
+    .join("\n");
 }
 
 async function runClassify(args: string[]): Promise<void> {
@@ -272,13 +276,13 @@ async function runClassify(args: string[]): Promise<void> {
 }
 
 async function runTaskCreate(args: string[]): Promise<void> {
-  const title = args.join(" ").trim();
+  const title = cleanCliText(args.join(" "));
   if (!title) {
     throw new Error("task:create requires a title");
   }
 
   const repository = new LocalJsonTaskRepository(localDbPath);
-  const task = await core.createTask(repository, { title });
+  const task = await core.createTaskWithActivity(repository, { title });
   console.log(JSON.stringify(task, null, 2));
 }
 
@@ -286,6 +290,12 @@ async function runTaskList(): Promise<void> {
   const repository = new LocalJsonTaskRepository(localDbPath);
   const tasks = await core.listRecentTasks(repository);
   console.log(JSON.stringify(tasks, null, 2));
+}
+
+async function runTaskDashboard(): Promise<void> {
+  const repository = new LocalJsonTaskRepository(localDbPath);
+  const snapshot = await core.getDashboardSnapshot(repository, 6);
+  console.log(JSON.stringify(snapshot, null, 2));
 }
 
 async function runMigrateKodari(args: string[]): Promise<void> {
@@ -407,9 +417,11 @@ async function runApplyScan(args: string[]): Promise<void> {
     if (entry.suggestedBucket === "do-not-touch") {
       return false;
     }
+
     if (!stateFilter) {
       return entry.suggestedState === "MOVE" || entry.suggestedState === "ARCHIVE";
     }
+
     return entry.suggestedState === stateFilter;
   });
 
@@ -458,10 +470,7 @@ async function runApplyScan(args: string[]): Promise<void> {
     skipped,
   };
 
-  writeJsonFile(
-    path.join(dataDir, `apply-scan-log-${nowStamp()}.json`),
-    logPayload,
-  );
+  writeJsonFile(path.join(dataDir, `apply-scan-log-${nowStamp()}.json`), logPayload);
 
   const markdown = formatPlanMarkdown(
     applyMode ? "Apply Scan Result" : "Apply Scan Plan",
@@ -498,10 +507,9 @@ async function runApplyScan(args: string[]): Promise<void> {
       organizeLogDir,
       `apply-scan-${nowStamp()}.log`,
     );
-    const lines = applied.map(
-      (plan) =>
-        `[${new Date().toISOString()}] moved ${plan.sourcePath} -> ${plan.targetPath}`,
-    );
+    const lines = applied.map((plan) => {
+      return `[${new Date().toISOString()}] moved ${plan.sourcePath} -> ${plan.targetPath}`;
+    });
     writeTextFile(operationLogPath, `${lines.join("\n")}\n`);
   }
 
@@ -544,6 +552,11 @@ async function main(): Promise<void> {
 
   if (command === "task:list") {
     await runTaskList();
+    return;
+  }
+
+  if (command === "task:dashboard") {
+    await runTaskDashboard();
     return;
   }
 

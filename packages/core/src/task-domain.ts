@@ -33,6 +33,12 @@ export interface DashboardActivity {
   createdAt: string;
 }
 
+export type DashboardActivityType =
+  | "task_created"
+  | "task_updated"
+  | "file_uploaded"
+  | "system";
+
 export interface SystemStatus {
   dataSource: string;
   firebaseEnabled: boolean;

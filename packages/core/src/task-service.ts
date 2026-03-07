@@ -1,4 +1,9 @@
-import type { CreateTaskInput, DashboardTask } from "./task-domain.js";
+import type {
+  CreateTaskInput,
+  DashboardActivity,
+  DashboardSummary,
+  DashboardTask,
+} from "./task-domain.js";
 
 export function newTaskId(now = Date.now()): string {
   return `task_${now}`;
@@ -6,6 +11,10 @@ export function newTaskId(now = Date.now()): string {
 
 export function nowIso(date = new Date()): string {
   return date.toISOString();
+}
+
+export function normalizeTaskProgress(value: unknown): number {
+  return Number(value || 0);
 }
 
 export function normalizeCreateTaskInput(
@@ -23,7 +32,7 @@ export function normalizeCreateTaskInput(
     title,
     owner: payload.owner || "unassigned",
     status: payload.status || "pending",
-    progress: Number(payload.progress || 0),
+    progress: normalizeTaskProgress(payload.progress),
     deadline: payload.deadline || "",
     priority: payload.priority || "normal",
     description: payload.description || "",
@@ -44,10 +53,70 @@ export function applyTaskPatch(
     ...existing,
     ...patch,
     title: patch.title ? patch.title.trim() : existing.title,
+    progress:
+      patch.progress === undefined
+        ? normalizeTaskProgress(existing.progress)
+        : normalizeTaskProgress(patch.progress),
     updatedAt: nowIso(now),
   };
   if (next.title.length < 2) {
     throw new Error("title must be at least 2 characters");
   }
   return next;
+}
+
+export function buildTaskCreatedActivity(
+  task: Pick<DashboardTask, "title" | "owner">,
+  now = new Date(),
+): Omit<DashboardActivity, "id"> {
+  return {
+    type: "task_created",
+    message: `업무 등록: ${task.title}`,
+    actor: task.owner || "unassigned",
+    createdAt: nowIso(now),
+  };
+}
+
+export function buildTaskUpdatedActivity(
+  task: Pick<DashboardTask, "title" | "status" | "owner">,
+  now = new Date(),
+): Omit<DashboardActivity, "id"> {
+  return {
+    type: "task_updated",
+    message: `업무 업데이트: ${task.title} (${task.status})`,
+    actor: task.owner || "system",
+    createdAt: nowIso(now),
+  };
+}
+
+export function calculateDashboardSummary(
+  tasks: DashboardTask[],
+): DashboardSummary {
+  if (tasks.length === 0) {
+    return {
+      totalTasks: 0,
+      completed: 0,
+      inProgress: 0,
+      urgent: 0,
+      averageProgress: 0,
+    };
+  }
+
+  const completed = tasks.filter((task) => task.status === "completed").length;
+  const inProgress = tasks.filter(
+    (task) => task.status === "in-progress",
+  ).length;
+  const urgent = tasks.filter((task) => task.priority === "urgent").length;
+  const progressSum = tasks.reduce(
+    (sum, task) => sum + normalizeTaskProgress(task.progress),
+    0,
+  );
+
+  return {
+    totalTasks: tasks.length,
+    completed,
+    inProgress,
+    urgent,
+    averageProgress: Math.round(progressSum / tasks.length),
+  };
 }

@@ -52,6 +52,8 @@ my-workbench/
 npm run dev:cli
 npm run dev:cli -- classify project kodari-manager source-of-truth
 npm run dev:cli -- classify asset tmp DELETE_CANDIDATE
+npm run dev:cli -- task:create "정리 운영 점검"
+npm run dev:cli -- task:dashboard
 npm run dev:cli -- migrate:kodari
 npm run dev:cli -- scan:folders G:\
 npm run dev:cli -- apply:scan
