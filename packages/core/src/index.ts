@@ -33,3 +33,4 @@ export function isAssetState(value: string): value is AssetState {
 export * from "./task-domain.js";
 export * from "./task-service.js";
 export * from "./task-usecases.js";
+export * from "./folder-classifier.js";

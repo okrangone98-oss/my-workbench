@@ -2,16 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { listAgentNames } from "@my-work-bench/agents";
-import {
-  createTask,
-  classifyProjectCandidate,
-  isAssetState,
-  listRecentTasks,
-  type ProjectCandidateStatus,
-} from "@my-work-bench/core";
+import * as core from "@my-work-bench/core";
 import { LocalJsonTaskRepository } from "@my-work-bench/integrations";
 
-const PROJECT_STATES: ProjectCandidateStatus[] = [
+const PROJECT_STATES: core.ProjectCandidateStatus[] = [
   "source-of-truth",
   "empty-shell",
   "hold",
@@ -24,6 +18,7 @@ function printHelp(): void {
   console.log("  npm run dev:cli -- classify project <name> <status>");
   console.log("  npm run dev:cli -- classify asset <name> <state>");
   console.log("  npm run dev:cli -- migrate:kodari [rootPath]");
+  console.log("  npm run dev:cli -- scan:folders [rootPath]");
   console.log("  npm run dev:cli -- task:create <title>");
   console.log("  npm run dev:cli -- task:list");
   console.log("");
@@ -31,10 +26,15 @@ function printHelp(): void {
   console.log("Asset state: KEEP, MERGE, MOVE, ARCHIVE, DELETE_CANDIDATE");
 }
 
+function getRepoRoot(): string {
+  const appDir = path.dirname(fileURLToPath(import.meta.url));
+  return path.resolve(appDir, "..", "..", "..");
+}
+
 function runDefault(): void {
   const projects = [
-    classifyProjectCandidate("pslms", "empty-shell"),
-    classifyProjectCandidate("kodari-manager", "source-of-truth"),
+    core.classifyProjectCandidate("pslms", "empty-shell"),
+    core.classifyProjectCandidate("kodari-manager", "source-of-truth"),
   ];
 
   console.log("my-work-bench CLI bootstrap");
@@ -54,34 +54,28 @@ function runClassify(args: string[]): void {
   }
 
   if (target === "project") {
-    if (!PROJECT_STATES.includes(value as ProjectCandidateStatus)) {
+    if (!PROJECT_STATES.includes(value as core.ProjectCandidateStatus)) {
       console.error(`Invalid project status: ${value}`);
       printHelp();
       process.exitCode = 1;
       return;
     }
-    const project = classifyProjectCandidate(name, value as ProjectCandidateStatus);
+    const project = core.classifyProjectCandidate(
+      name,
+      value as core.ProjectCandidateStatus,
+    );
     console.log(JSON.stringify(project, null, 2));
     return;
   }
 
   if (target === "asset") {
-    if (!isAssetState(value)) {
+    if (!core.isAssetState(value)) {
       console.error(`Invalid asset state: ${value}`);
       printHelp();
       process.exitCode = 1;
       return;
     }
-    console.log(
-      JSON.stringify(
-        {
-          name,
-          state: value,
-        },
-        null,
-        2,
-      ),
-    );
+    console.log(JSON.stringify({ name, state: value }, null, 2));
     return;
   }
 
@@ -90,11 +84,10 @@ function runClassify(args: string[]): void {
 }
 
 function runMigrateKodari(args: string[]): void {
-  const defaultRoot = "G:\\개발_202602\\코다리부장";
+  const defaultRoot = "G:\\진행중프로젝트\\개인프로젝트\\개발_202602\\코다리부장";
   const targetRoot = args[0] || defaultRoot;
   const reportDate = new Date().toISOString().slice(0, 10);
-  const appDir = path.dirname(fileURLToPath(import.meta.url));
-  const repoRoot = path.resolve(appDir, "..", "..", "..");
+  const repoRoot = getRepoRoot();
   const docsDir = path.join(repoRoot, "docs");
   const reportPath = path.join(docsDir, `kodari-migration-report-${reportDate}.md`);
 
@@ -143,9 +136,68 @@ function runMigrateKodari(args: string[]): void {
   console.log(`Created: ${reportPath}`);
 }
 
+function runScanFolders(args: string[]): void {
+  const targetRoot = args[0] || "G:\\";
+  if (!fs.existsSync(targetRoot)) {
+    console.error(`scan root not found: ${targetRoot}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const repoRoot = getRepoRoot();
+  const docsDir = path.join(repoRoot, "docs");
+  const dataDir = path.join(repoRoot, "data");
+  const stamp = new Date().toISOString().slice(0, 10);
+  const jsonPath = path.join(dataDir, `folder-scan-${stamp}.json`);
+  const mdPath = path.join(docsDir, `folder-scan-${stamp}.md`);
+
+  const dirs = fs
+    .readdirSync(targetRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const fullPath = path.join(targetRoot, entry.name);
+      try {
+        const stat = fs.statSync(fullPath);
+        const classified = core.classifyFolderByName(entry.name);
+        return {
+          name: entry.name,
+          path: fullPath,
+          lastModified: stat.mtime.toISOString(),
+          ...classified,
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.mkdirSync(docsDir, { recursive: true });
+  fs.writeFileSync(jsonPath, JSON.stringify(dirs, null, 2), "utf8");
+
+  const mdLines = [
+    "# Folder Scan Report",
+    "",
+    `- Date: ${stamp}`,
+    `- Root: \`${targetRoot}\``,
+    "",
+    "| Name | Path | Last Modified | Suggested State | Bucket | Reason |",
+    "|---|---|---|---|---|---|",
+    ...dirs.map(
+      (d) =>
+        `| ${d.name} | \`${d.path}\` | ${d.lastModified} | ${d.suggestedState} | ${d.suggestedBucket} | ${d.reason} |`,
+    ),
+    "",
+  ];
+  fs.writeFileSync(mdPath, mdLines.join("\n"), "utf8");
+
+  console.log(`Created: ${jsonPath}`);
+  console.log(`Created: ${mdPath}`);
+}
+
 function getLocalTaskRepository(): LocalJsonTaskRepository {
-  const appDir = path.dirname(fileURLToPath(import.meta.url));
-  const repoRoot = path.resolve(appDir, "..", "..", "..");
+  const repoRoot = getRepoRoot();
   const dbPath = path.join(repoRoot, "data", "tasks.local-db.json");
   return new LocalJsonTaskRepository(dbPath);
 }
@@ -158,7 +210,7 @@ async function runTaskCreate(args: string[]): Promise<void> {
     return;
   }
   const repository = getLocalTaskRepository();
-  const task = await createTask(repository, { title });
+  const task = await core.createTask(repository, { title });
   await repository.appendActivity({
     type: "task_created",
     message: `Task created: ${task.title}`,
@@ -169,7 +221,7 @@ async function runTaskCreate(args: string[]): Promise<void> {
 
 async function runTaskList(): Promise<void> {
   const repository = getLocalTaskRepository();
-  const tasks = await listRecentTasks(repository, 20);
+  const tasks = await core.listRecentTasks(repository, 20);
   if (tasks.length === 0) {
     console.log("No tasks yet.");
     return;
@@ -208,6 +260,10 @@ async function main(): Promise<void> {
   }
   if (command === "migrate:kodari") {
     runMigrateKodari(args);
+    return;
+  }
+  if (command === "scan:folders") {
+    runScanFolders(args);
     return;
   }
   if (command === "task:create") {
