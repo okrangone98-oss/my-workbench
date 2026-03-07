@@ -1,8 +1,8 @@
-# Apply Scan Plan
+# Apply Scan Result
 
 - 기준 스캔 파일: `G:\my-work-bench\data\folder-scan-2026-03-07.json`
-- 적용 모드: `plan`
-- 생성일: `2026-03-07T06:48:34.132Z`
+- 적용 모드: `apply`
+- 생성일: `2026-03-07T06:49:01.013Z`
 
 | source | target | state | bucket | reason |
 | --- | --- | --- | --- | --- |

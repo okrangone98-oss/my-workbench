@@ -9,7 +9,7 @@
   "scripts": {
     "build": "npm run build --workspace @my-work-bench/core && npm run build --workspace @my-work-bench/agents && npm run build --workspace @my-work-bench/skills && npm run build --workspace @my-work-bench/integrations && npm run build --workspace @my-work-bench/cli",
     "boilerplate:init": "node scripts/init-boilerplate.mjs",
-    "dev:cli": "npm run dev --workspace @my-work-bench/cli",
+    "dev:cli": "npm run dev --workspace @my-work-bench/cli --",
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {

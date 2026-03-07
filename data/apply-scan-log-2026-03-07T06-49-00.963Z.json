@@ -1,0 +1,19 @@
+{
+  "runAt": "2026-03-07T06:49:00.963Z",
+  "scanFilePath": "G:\\my-work-bench\\data\\folder-scan-2026-03-07.json",
+  "applyMode": true,
+  "stateFilter": "MOVE",
+  "eligibleCount": 1,
+  "appliedCount": 1,
+  "skippedCount": 0,
+  "applied": [
+    {
+      "sourcePath": "G:\\tmp",
+      "targetPath": "G:\\최근3개월검토\\자동분류\\tmp",
+      "state": "MOVE",
+      "bucket": "review-candidate",
+      "reason": "cache_or_temp_folder"
+    }
+  ],
+  "skipped": []
+}

@@ -1,20 +1,22 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import * as core from "@my-work-bench/core";
 import { listAgentNames } from "@my-work-bench/agents";
 import { LocalJsonTaskRepository } from "@my-work-bench/integrations";
-import { fileURLToPath } from "node:url";
+
+type ScanBucket =
+  | "active-project"
+  | "review-candidate"
+  | "long-term-archive"
+  | "do-not-touch";
 
 type ScanEntry = {
   name: string;
   path: string;
   lastModified: string;
   suggestedState: core.AssetState;
-  suggestedBucket:
-    | "active-project"
-    | "review-candidate"
-    | "long-term-archive"
-    | "do-not-touch";
+  suggestedBucket: ScanBucket;
   reason: string;
 };
 
@@ -22,8 +24,12 @@ type MovePlan = {
   sourcePath: string;
   targetPath: string;
   state: core.AssetState;
-  bucket: ScanEntry["suggestedBucket"];
+  bucket: ScanBucket;
   reason: string;
+};
+
+type SkipRecord = MovePlan & {
+  skipReason: string;
 };
 
 const currentFilePath = fileURLToPath(import.meta.url);
@@ -32,13 +38,27 @@ const gDriveRoot = "G:\\";
 const dataDir = path.join(repoRoot, "data");
 const docsDir = path.join(repoRoot, "docs");
 const localDbPath = path.join(dataDir, "tasks.local-db.json");
+const organizeLogDir = "G:\\정리운영로그";
 const defaultKodariPath = path.join(
   gDriveRoot,
-  "진행중프로젝트",
-  "개인프로젝트",
-  "개발_202602",
-  "코다리부장",
+  "\uC9C4\uD589\uC911\uD504\uB85C\uC81D\uD2B8",
+  "\uAC1C\uC778\uD504\uB85C\uC81D\uD2B8",
+  "\uAC1C\uBC1C_202602",
+  "\uCF54\uB2E4\uB9AC\uBD80\uC7A5",
 );
+
+const protectedNames = new Set<string>([
+  "$RECYCLE.BIN",
+  "System Volume Information",
+  "@@trjHD",
+  "found.000",
+  "\uACFC\uAC70\uC790\uB8CC",
+  "\uC7A5\uAE30\uBCF4\uAD00\uC790\uB8CC",
+  "\uC815\uB9AC\uC6B4\uC601\uB85C\uADF8",
+  "\uC9C4\uD589\uC911\uD504\uB85C\uC81D\uD2B8",
+  "\uCD5C\uADFC3\uAC1C\uC6D4\uAC80\uD1A0",
+  "my-work-bench",
+]);
 
 function ensureDir(targetDir: string): void {
   fs.mkdirSync(targetDir, { recursive: true });
@@ -48,6 +68,10 @@ function todayStamp(date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
+function nowStamp(date = new Date()): string {
+  return date.toISOString().replace(/[:]/g, "-");
+}
+
 function readJsonFile<T>(filePath: string): T {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
 }
@@ -55,6 +79,10 @@ function readJsonFile<T>(filePath: string): T {
 function writeTextFile(filePath: string, content: string): void {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, content, "utf8");
+}
+
+function writeJsonFile(filePath: string, value: unknown): void {
+  writeTextFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 function printHelp(): void {
@@ -89,17 +117,28 @@ function latestFileByPrefix(prefix: string, extension: string): string | null {
   return path.join(dataDir, candidates[candidates.length - 1]);
 }
 
-function isSystemFolder(name: string): boolean {
-  return [
-    "$RECYCLE.BIN",
-    "System Volume Information",
-    "@@trjHD",
-    "found.000",
-  ].includes(name);
+function isProtectedName(name: string): boolean {
+  return protectedNames.has(name);
+}
+
+function isProtectedPath(targetPath: string): boolean {
+  const normalized = path.normalize(targetPath);
+  const baseNames = normalized
+    .split(path.sep)
+    .filter(Boolean)
+    .map((value) => value.trim());
+
+  return baseNames.some((value) => protectedNames.has(value));
 }
 
 function shouldSkipScanFolder(fullPath: string, name: string): boolean {
-  if (isSystemFolder(name)) {
+  if (isProtectedName(name) && ![
+    "\uACFC\uAC70\uC790\uB8CC",
+    "\uC7A5\uAE30\uBCF4\uAD00\uC790\uB8CC",
+    "\uC815\uB9AC\uC6B4\uC601\uB85C\uADF8",
+    "\uC9C4\uD589\uC911\uD504\uB85C\uC81D\uD2B8",
+    "\uCD5C\uADFC3\uAC1C\uC6D4\uAC80\uD1A0",
+  ].includes(name)) {
     return true;
   }
 
@@ -107,27 +146,21 @@ function shouldSkipScanFolder(fullPath: string, name: string): boolean {
   return normalized === path.normalize(dataDir) || normalized === path.normalize(docsDir);
 }
 
-function normalizeFolderName(name: string): string {
-  const map: Record<string, string> = {
-    "개발_202602": "개발_202602",
-    "과거자료": "과거자료",
-    "장기보관자료": "장기보관자료",
-    "정리운영로그": "정리운영로그",
-    "진행중프로젝트": "진행중프로젝트",
-    "최근3개월검토": "최근3개월검토",
-    "공동체 종합시스템_복사본": "공동체 종합시스템_복사본",
-  };
-
-  return map[name] ?? name;
-}
-
-function targetDirForBucket(bucket: ScanEntry["suggestedBucket"]): string | null {
+function targetDirForBucket(bucket: ScanBucket): string | null {
   if (bucket === "review-candidate") {
-    return path.join(gDriveRoot, "최근3개월검토", "자동분류");
+    return path.join(
+      gDriveRoot,
+      "\uCD5C\uADFC3\uAC1C\uC6D4\uAC80\uD1A0",
+      "\uC790\uB3D9\uBD84\uB958",
+    );
   }
 
   if (bucket === "long-term-archive") {
-    return path.join(gDriveRoot, "장기보관자료", "자동분류");
+    return path.join(
+      gDriveRoot,
+      "\uC7A5\uAE30\uBCF4\uAD00\uC790\uB8CC",
+      "\uC790\uB3D9\uBD84\uB958",
+    );
   }
 
   return null;
@@ -147,6 +180,44 @@ function buildMovePlan(entry: ScanEntry): MovePlan | null {
     bucket: entry.suggestedBucket,
     reason: entry.reason,
   };
+}
+
+function isDirectChildOfGDrive(targetPath: string): boolean {
+  return path.dirname(path.normalize(targetPath)) === path.normalize(gDriveRoot);
+}
+
+function isNestedPath(parentPath: string, childPath: string): boolean {
+  const parent = path.normalize(parentPath).toLowerCase();
+  const child = path.normalize(childPath).toLowerCase();
+  return child.startsWith(`${parent}${path.sep}`) || child === parent;
+}
+
+function validateMovePlan(plan: MovePlan): string | null {
+  if (!fs.existsSync(plan.sourcePath)) {
+    return "source_missing";
+  }
+
+  if (!isDirectChildOfGDrive(plan.sourcePath)) {
+    return "source_not_root_child";
+  }
+
+  if (isProtectedPath(plan.sourcePath)) {
+    return "source_protected";
+  }
+
+  if (isProtectedName(path.basename(plan.sourcePath))) {
+    return "source_protected";
+  }
+
+  if (isNestedPath(plan.sourcePath, plan.targetPath)) {
+    return "target_inside_source";
+  }
+
+  if (fs.existsSync(plan.targetPath)) {
+    return "target_exists";
+  }
+
+  return null;
 }
 
 function formatPlanMarkdown(
@@ -192,16 +263,8 @@ async function runClassify(args: string[]): Promise<void> {
     if (!core.isAssetState(rawState)) {
       throw new Error(`invalid asset state: ${rawState}`);
     }
-    console.log(
-      JSON.stringify(
-        {
-          name,
-          state: rawState,
-        },
-        null,
-        2,
-      ),
-    );
+
+    console.log(JSON.stringify({ name, state: rawState }, null, 2));
     return;
   }
 
@@ -241,7 +304,7 @@ async function runMigrateKodari(args: string[]): Promise<void> {
     "",
     "## 기준 판단",
     "",
-    "- `packages/core`: 순수 도메인/유스케이스",
+    "- `packages/core`: 순수 도메인과 유스케이스",
     "- `packages/integrations`: 외부 연동 및 저장소 어댑터",
     "- `apps/cli`: 로컬 실행기",
     "",
@@ -274,11 +337,10 @@ async function runScanFolders(args: string[]): Promise<void> {
 
     try {
       const stats = fs.statSync(fullPath);
-      const normalizedName = normalizeFolderName(entry.name);
-      const classified = core.classifyFolderByName(normalizedName);
+      const classified = core.classifyFolderByName(entry.name);
 
       results.push({
-        name: normalizedName,
+        name: entry.name,
         path: fullPath,
         lastModified: stats.mtime.toISOString(),
         suggestedState: classified.suggestedState,
@@ -290,10 +352,12 @@ async function runScanFolders(args: string[]): Promise<void> {
     }
   }
 
+  results.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+
   const stamp = todayStamp();
   const jsonPath = path.join(dataDir, `folder-scan-${stamp}.json`);
   const mdPath = path.join(docsDir, `folder-scan-${stamp}.md`);
-  writeTextFile(jsonPath, `${JSON.stringify(results, null, 2)}\n`);
+  writeJsonFile(jsonPath, results);
 
   const markdown = [
     `# 폴더 스캔 결과 (${stamp})`,
@@ -333,8 +397,7 @@ async function runApplyScan(args: string[]): Promise<void> {
     }
   }
 
-  const scanFilePath =
-    scanPathArg || latestFileByPrefix("folder-scan-", ".json");
+  const scanFilePath = scanPathArg || latestFileByPrefix("folder-scan-", ".json");
   if (!scanFilePath || !fs.existsSync(scanFilePath)) {
     throw new Error("folder scan json not found");
   }
@@ -350,10 +413,21 @@ async function runApplyScan(args: string[]): Promise<void> {
     return entry.suggestedState === stateFilter;
   });
 
-  const plans = filtered
+  const allPlans = filtered
     .map((entry) => buildMovePlan(entry))
-    .filter((entry): entry is MovePlan => entry !== null)
-    .filter((plan) => fs.existsSync(plan.sourcePath));
+    .filter((entry): entry is MovePlan => entry !== null);
+
+  const eligiblePlans: MovePlan[] = [];
+  const skipped: SkipRecord[] = [];
+
+  for (const plan of allPlans) {
+    const validationError = validateMovePlan(plan);
+    if (validationError) {
+      skipped.push({ ...plan, skipReason: validationError });
+      continue;
+    }
+    eligiblePlans.push(plan);
+  }
 
   const stamp = todayStamp();
   const docName = applyMode
@@ -362,15 +436,8 @@ async function runApplyScan(args: string[]): Promise<void> {
   const docPath = path.join(docsDir, docName);
 
   const applied: MovePlan[] = [];
-  const skipped: Array<MovePlan & { skipReason: string }> = [];
-
-  for (const plan of plans) {
+  for (const plan of eligiblePlans) {
     if (!applyMode) {
-      continue;
-    }
-
-    if (fs.existsSync(plan.targetPath)) {
-      skipped.push({ ...plan, skipReason: "target_exists" });
       continue;
     }
 
@@ -379,12 +446,39 @@ async function runApplyScan(args: string[]): Promise<void> {
     applied.push(plan);
   }
 
+  const logPayload = {
+    runAt: new Date().toISOString(),
+    scanFilePath,
+    applyMode,
+    stateFilter,
+    eligibleCount: eligiblePlans.length,
+    appliedCount: applied.length,
+    skippedCount: skipped.length,
+    applied,
+    skipped,
+  };
+
+  writeJsonFile(
+    path.join(dataDir, `apply-scan-log-${nowStamp()}.json`),
+    logPayload,
+  );
+
   const markdown = formatPlanMarkdown(
     applyMode ? "Apply Scan Result" : "Apply Scan Plan",
-    applyMode ? applied : plans,
+    applyMode ? applied : eligiblePlans,
     scanFilePath,
     applyMode,
   );
+
+  const safetyRules = [
+    "## Safety Rules",
+    "",
+    "- `G:\\` 바로 아래 1depth 폴더만 이동한다.",
+    "- 보호 폴더(`과거자료`, `장기보관자료`, `정리운영로그`, `진행중프로젝트`, `최근3개월검토`, `my-work-bench`)는 이동하지 않는다.",
+    "- 대상 경로가 이미 존재하면 건너뛴다.",
+    "- 대상 경로가 소스 경로 내부이면 건너뛴다.",
+    "",
+  ].join("\n");
 
   const skippedBlock =
     skipped.length === 0
@@ -396,14 +490,28 @@ async function runApplyScan(args: string[]): Promise<void> {
           )
           .join("\n")}\n`;
 
-  writeTextFile(docPath, markdown + skippedBlock);
+  writeTextFile(docPath, `${markdown}\n\n${safetyRules}${skippedBlock}`);
+
+  if (applyMode && applied.length > 0) {
+    ensureDir(organizeLogDir);
+    const operationLogPath = path.join(
+      organizeLogDir,
+      `apply-scan-${nowStamp()}.log`,
+    );
+    const lines = applied.map(
+      (plan) =>
+        `[${new Date().toISOString()}] moved ${plan.sourcePath} -> ${plan.targetPath}`,
+    );
+    writeTextFile(operationLogPath, `${lines.join("\n")}\n`);
+  }
+
   console.log(
     JSON.stringify(
       {
         scanFilePath,
         applyMode,
         stateFilter,
-        planCount: plans.length,
+        planCount: eligiblePlans.length,
         appliedCount: applied.length,
         skippedCount: skipped.length,
         docPath,

@@ -1,0 +1,11 @@
+{
+  "runAt": "2026-03-07T06:48:34.069Z",
+  "scanFilePath": "G:\\my-work-bench\\data\\folder-scan-2026-03-07.json",
+  "applyMode": false,
+  "stateFilter": "MOVE",
+  "eligibleCount": 1,
+  "appliedCount": 0,
+  "skippedCount": 0,
+  "applied": [],
+  "skipped": []
+}
