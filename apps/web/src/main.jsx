@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
+  BarChart3,
   Bot,
   ClipboardCheck,
   Copy,
@@ -39,6 +40,13 @@ const workflows = [
     accent: "coral",
   },
   {
+    id: "table",
+    label: "표/시트 분석",
+    short: "엑셀이나 구글시트에서 복사한 표를 요약하고 간단한 그래프로 봅니다.",
+    icon: BarChart3,
+    accent: "mint",
+  },
+  {
     id: "question",
     label: "AI 질문 만들기",
     short: "복사해서 다른 AI에게 바로 던질 질문을 만듭니다.",
@@ -70,6 +78,8 @@ const samples = {
     "지역 소상공인 디지털 전환 지원사업 공고문입니다. 지원대상, 제출서류, 평가기준, 예산, 기간 내용을 여기에 붙여넣으세요.",
   marketing:
     "AI 업무 자동화 컨설팅을 처음 접하는 1인 사업자를 위한 쉬운 콘텐츠",
+  table:
+    "월\t문의\t매출\n1월\t14\t1200000\n2월\t21\t1850000\n3월\t18\t1640000\n4월\t30\t2400000",
   question:
     "내가 만들고 싶은 정책 서비스 아이디어나 사업계획서 초안을 붙여넣으세요.",
   review:
@@ -110,8 +120,57 @@ function numbered(items) {
   return items.map((item, index) => `${index + 1}. ${item}`).join("\n");
 }
 
+function parseTable(content) {
+  const rows = content
+    .trim()
+    .split(/\r?\n/)
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row) => row.split(row.includes("\t") ? "\t" : ",").map((cell) => cell.trim()));
+
+  if (rows.length < 2) return { headers: [], rows: [], numericColumns: [] };
+
+  const headers = rows[0];
+  const dataRows = rows.slice(1).filter((row) => row.some(Boolean));
+  const numericColumns = headers
+    .map((header, columnIndex) => {
+      const values = dataRows
+        .map((row) => Number(String(row[columnIndex] || "").replace(/,/g, "")))
+        .filter((value) => Number.isFinite(value));
+
+      if (!values.length) return null;
+      const sum = values.reduce((total, value) => total + value, 0);
+      const average = sum / values.length;
+      const max = Math.max(...values);
+      const min = Math.min(...values);
+
+      return { header, columnIndex, values, sum, average, max, min };
+    })
+    .filter(Boolean);
+
+  return { headers, rows: dataRows, numericColumns };
+}
+
+function formatNumber(value) {
+  return Number.isInteger(value)
+    ? value.toLocaleString("ko-KR")
+    : value.toLocaleString("ko-KR", { maximumFractionDigits: 2 });
+}
+
 function renderPolicy({ title, content }) {
   const subject = title || "정책 문제 구조화";
+  if (!content.trim()) {
+    return `# ${subject}
+
+자료를 붙여넣은 뒤 왼쪽의 [분석하기] 버튼을 누르면 결과가 생성됩니다.
+
+## 지금 할 일
+1. 민원, 회의 메모, 현장 의견 같은 자료를 붙여넣습니다.
+2. [분석하기]를 누릅니다.
+3. 오른쪽 결과를 복사하거나 다운로드합니다.
+`;
+  }
+
   return `# ${subject}
 
 ## 한 줄 요약
@@ -161,6 +220,15 @@ ${content || "여기에 자료를 붙여넣으세요."}
 
 function renderNotice({ title, content }) {
   const subject = title || "공고문 분석";
+  if (!content.trim()) {
+    return `# ${subject}
+
+공고문을 붙여넣은 뒤 [분석하기] 버튼을 누르세요.
+
+지원대상, 제출서류, 평가기준, 예산, 기간 같은 항목을 뽑아드립니다.
+`;
+  }
+
   return `# ${subject}
 
 ## 공고문 요약
@@ -243,8 +311,71 @@ ${bullet(["저장 수", "댓글 질문 수", "프로필 방문", "문의 전환"
 `;
 }
 
+function renderTable({ title, content }) {
+  const table = parseTable(content);
+  const subject = title || "표/시트 분석";
+
+  if (!table.rows.length) {
+    return `# ${subject}
+
+## 사용 방법
+엑셀이나 구글시트에서 표 영역을 복사한 뒤 왼쪽 입력칸에 붙여넣으세요.
+
+## 예시
+월    문의    매출
+1월   14     1200000
+2월   21     1850000
+
+## AI에게 물어볼 질문
+아래 표를 기준으로 추세, 이상치, 개선 기회, 다음에 확인해야 할 질문을 정리해줘.
+`;
+  }
+
+  const numericSummary = table.numericColumns.length
+    ? table.numericColumns
+        .map((column) => {
+          return `- ${column.header}: 합계 ${formatNumber(column.sum)}, 평균 ${formatNumber(
+            column.average,
+          )}, 최소 ${formatNumber(column.min)}, 최대 ${formatNumber(column.max)}`;
+        })
+        .join("\n")
+    : "- 숫자 컬럼을 찾지 못했습니다. 숫자에 쉼표나 문자 단위가 섞여 있으면 정리해보세요.";
+
+  return `# ${subject}
+
+## 표 요약
+- 컬럼 수: ${table.headers.length}
+- 데이터 행 수: ${table.rows.length}
+- 숫자 컬럼 수: ${table.numericColumns.length}
+
+## 숫자 컬럼 요약
+${numericSummary}
+
+## 먼저 볼 포인트
+${bullet([
+    "합계와 평균이 높은 컬럼을 기준으로 성과 흐름을 확인하세요.",
+    "최대값과 최소값 차이가 큰 컬럼은 원인을 따로 봐야 합니다.",
+    "기간별 자료라면 최근 값이 좋아지는지 나빠지는지 추세를 확인하세요.",
+    "숫자가 비어 있는 행은 입력 오류인지 실제 결측인지 구분하세요.",
+  ])}
+
+## AI에게 이어서 물어볼 질문
+아래 표를 분석해서 핵심 추세, 이상치, 원인 가설, 의사결정에 필요한 추가 질문, 다음 행동을 제안해줘.
+
+[표]
+${content || "여기에 표를 붙여넣으세요."}
+`;
+}
+
 function renderQuestion({ title, content, skillValue }) {
   const skill = skillChoices.find((choice) => choice.value === skillValue);
+  if (!content.trim()) {
+    return `# AI에게 물어볼 질문
+
+자료를 붙여넣고 [분석하기]를 누르면 복사해서 다른 AI에게 보낼 질문을 만들어드립니다.
+`;
+  }
+
   return `# AI에게 물어볼 질문
 
 ## 목적
@@ -271,6 +402,15 @@ ${content || "여기에 자료를 붙여넣으세요."}
 
 function renderReview({ title, content, purpose }) {
   const subject = purpose || title || "AI 답변 검토";
+  if (!content.trim()) {
+    return `# ${subject}
+
+AI가 만든 답변을 붙여넣고 [분석하기]를 누르세요.
+
+사실성, 논리, 실행 가능성, 사용자 관점, 리스크 기준으로 점검합니다.
+`;
+  }
+
   return `# ${subject}
 
 ## 먼저 볼 것
@@ -325,6 +465,7 @@ function App() {
   const [activeId, setActiveId] = useState("policy");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [analyzedContent, setAnalyzedContent] = useState("");
   const [brand, setBrand] = useState("");
   const [audience, setAudience] = useState("");
   const [purpose, setPurpose] = useState("");
@@ -337,16 +478,21 @@ function App() {
   const draftKey = `my-workbench:draft:${activeId}`;
 
   const result = useMemo(() => {
-    if (activeId === "policy") return renderPolicy({ title, content });
-    if (activeId === "notice") return renderNotice({ title, content });
+    if (activeId === "policy") return renderPolicy({ title, content: analyzedContent });
+    if (activeId === "notice") return renderNotice({ title, content: analyzedContent });
     if (activeId === "marketing") {
-      return renderMarketing({ title, content, brand, audience });
+      return renderMarketing({ title, content: analyzedContent, brand, audience });
     }
+    if (activeId === "table") return renderTable({ title, content: analyzedContent });
     if (activeId === "question") {
-      return renderQuestion({ title, content, skillValue });
+      return renderQuestion({ title, content: analyzedContent, skillValue });
     }
-    return renderReview({ title, content, purpose });
-  }, [activeId, audience, brand, content, purpose, skillValue, title]);
+    return renderReview({ title, content: analyzedContent, purpose });
+  }, [activeId, analyzedContent, audience, brand, purpose, skillValue, title]);
+
+  const tablePreview = useMemo(() => {
+    return activeId === "table" ? parseTable(analyzedContent) : null;
+  }, [activeId, analyzedContent]);
 
   useEffect(() => {
     setCopied(false);
@@ -356,7 +502,15 @@ function App() {
   function saveDraft() {
     localStorage.setItem(
       draftKey,
-      JSON.stringify({ title, content, brand, audience, purpose, skillValue }),
+      JSON.stringify({
+        title,
+        content,
+        analyzedContent,
+        brand,
+        audience,
+        purpose,
+        skillValue,
+      }),
     );
     setSavedMessage("브라우저에 임시 저장했습니다.");
   }
@@ -371,6 +525,7 @@ function App() {
     const parsed = JSON.parse(saved);
     setTitle(parsed.title || "");
     setContent(parsed.content || "");
+    setAnalyzedContent(parsed.analyzedContent || parsed.content || "");
     setBrand(parsed.brand || "");
     setAudience(parsed.audience || "");
     setPurpose(parsed.purpose || "");
@@ -381,12 +536,22 @@ function App() {
   function fillSample() {
     setContent(samples[activeId]);
     if (!title) setTitle(activeWorkflow.label);
-    setSavedMessage("예시를 넣었습니다. 그대로 바꿔서 써보세요.");
+    setSavedMessage("예시를 넣었습니다. [분석하기]를 눌러 결과를 확인하세요.");
+  }
+
+  function analyzeNow() {
+    setAnalyzedContent(content);
+    setSavedMessage(
+      content.trim()
+        ? "분석했습니다. 오른쪽 결과를 확인하세요."
+        : "먼저 자료를 붙여넣어 주세요.",
+    );
   }
 
   function resetInput() {
     setTitle("");
     setContent("");
+    setAnalyzedContent("");
     setBrand("");
     setAudience("");
     setPurpose("");
@@ -483,6 +648,10 @@ function App() {
         <div className="workspace-grid">
           <section className="input-panel" aria-label="자료 입력">
             <div className="quick-actions" aria-label="빠른 작업">
+              <button className="primary-action" onClick={analyzeNow} type="button">
+                <Sparkles size={16} aria-hidden="true" />
+                분석하기
+              </button>
               <button onClick={fillSample} type="button">
                 <Sparkles size={16} aria-hidden="true" />
                 예시
@@ -568,6 +737,13 @@ function App() {
                 value={content}
               />
             </label>
+
+            {activeId === "table" && (
+              <div className="table-help">
+                엑셀이나 구글시트에서 셀 범위를 복사한 뒤 그대로 붙여넣으세요.
+                첫 줄은 제목 행으로 인식합니다.
+              </div>
+            )}
           </section>
 
           <section className="result-panel" aria-label="결과">
@@ -585,6 +761,52 @@ function App() {
                 다운로드
               </button>
             </div>
+            {activeId === "table" && tablePreview?.rows.length > 0 && (
+              <div className="table-preview" aria-label="표 미리보기">
+                <div className="mini-table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        {tablePreview.headers.map((header) => (
+                          <th key={header}>{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tablePreview.rows.slice(0, 6).map((row, rowIndex) => (
+                        <tr key={`${row.join("-")}-${rowIndex}`}>
+                          {tablePreview.headers.map((header, columnIndex) => (
+                            <td key={`${header}-${columnIndex}`}>
+                              {row[columnIndex] || ""}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="chart-list">
+                  {tablePreview.numericColumns.slice(0, 3).map((column) => {
+                    const max = Math.max(...column.values, 1);
+                    return (
+                      <div className="chart-card" key={column.header}>
+                        <strong>{column.header}</strong>
+                        {column.values.slice(0, 8).map((value, index) => (
+                          <div className="bar-row" key={`${column.header}-${index}`}>
+                            <span>{index + 1}</span>
+                            <div>
+                              <i style={{ width: `${Math.max((value / max) * 100, 4)}%` }} />
+                            </div>
+                            <em>{formatNumber(value)}</em>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <pre>{result}</pre>
           </section>
         </div>

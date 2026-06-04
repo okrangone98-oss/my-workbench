@@ -42,6 +42,11 @@ textarea {
   --accent-soft: #ffe7df;
 }
 
+.accent-mint {
+  --accent: #48f2b4;
+  --accent-soft: #dffff3;
+}
+
 .accent-violet {
   --accent: #a985ff;
   --accent-soft: #eee7ff;
@@ -269,7 +274,7 @@ h1 {
 .quick-actions {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.25fr repeat(4, minmax(0, 1fr));
 }
 
 .quick-actions button,
@@ -290,6 +295,16 @@ h1 {
 .quick-actions button:hover,
 .download-button:hover {
   background: var(--accent);
+}
+
+.quick-actions .primary-action {
+  background: #15181f;
+  color: #ffffff;
+}
+
+.quick-actions .primary-action:hover {
+  background: var(--accent);
+  color: #15181f;
 }
 
 .status-message {
@@ -369,6 +384,91 @@ textarea {
 
 .download-button {
   flex-shrink: 0;
+}
+
+.table-help {
+  background: #f4f2ed;
+  border: 1px dashed #15181f;
+  border-radius: 8px;
+  color: #42454d;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px;
+}
+
+.table-preview {
+  border-bottom: 2px solid #15181f;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.mini-table-wrap {
+  overflow: auto;
+}
+
+.mini-table-wrap table {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 100%;
+}
+
+.mini-table-wrap th,
+.mini-table-wrap td {
+  border: 1px solid #d7d1c6;
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.mini-table-wrap th {
+  background: var(--accent-soft);
+}
+
+.chart-list {
+  display: grid;
+  gap: 10px;
+}
+
+.chart-card {
+  background: #f4f2ed;
+  border: 1px solid #15181f;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.chart-card strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.bar-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 24px minmax(80px, 1fr) 74px;
+  margin: 6px 0;
+}
+
+.bar-row span,
+.bar-row em {
+  color: #626875;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.bar-row div {
+  background: #ffffff;
+  border: 1px solid #d7d1c6;
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+}
+
+.bar-row i {
+  background: var(--accent);
+  display: block;
+  height: 100%;
 }
 
 pre {
