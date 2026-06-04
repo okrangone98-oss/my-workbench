@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   analyzePlanningNotice,
@@ -16,10 +16,14 @@ import {
   Bot,
   ClipboardCheck,
   Copy,
+  Download,
   FileSearch,
   FileText,
+  FolderOpen,
   Megaphone,
   Network,
+  RotateCcw,
+  Save,
   Sparkles,
 } from "lucide-react";
 import "./styles.css";
@@ -81,6 +85,29 @@ function copyText(value) {
   navigator.clipboard?.writeText(value);
 }
 
+function createDownloadName(activeId, title) {
+  const date = new Date().toISOString().slice(0, 10);
+  const cleanTitle = (title || activeId)
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 40);
+
+  return `my-workbench-${date}-${cleanTitle || activeId}.md`;
+}
+
+function downloadMarkdown({ activeId, title, result }) {
+  const blob = new Blob([result], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = createDownloadName(activeId, title);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function App() {
   const [activeId, setActiveId] = useState("policy");
   const [title, setTitle] = useState("");
@@ -90,6 +117,7 @@ function App() {
   const [purpose, setPurpose] = useState("");
   const [skillValue, setSkillValue] = useState("1");
   const [copied, setCopied] = useState(false);
+  const [savedMessage, setSavedMessage] = useState("");
 
   const skillChoices = useMemo(() => listSkillMenuChoices(), []);
   const activeWorkflow = workflows.find((workflow) => workflow.id === activeId);
@@ -133,6 +161,55 @@ function App() {
   }, [activeId, audience, brand, content, purpose, skillValue, title]);
 
   const ActiveIcon = activeWorkflow.icon;
+  const draftKey = `my-workbench:draft:${activeId}`;
+
+  useEffect(() => {
+    setCopied(false);
+    setSavedMessage("");
+  }, [activeId]);
+
+  function saveDraft() {
+    localStorage.setItem(
+      draftKey,
+      JSON.stringify({ title, content, brand, audience, purpose, skillValue }),
+    );
+    setSavedMessage("브라우저에 임시 저장했습니다.");
+  }
+
+  function loadDraft() {
+    const saved = localStorage.getItem(draftKey);
+    if (!saved) {
+      setSavedMessage("불러올 임시 저장 자료가 없습니다.");
+      return;
+    }
+
+    const parsed = JSON.parse(saved);
+    setTitle(parsed.title || "");
+    setContent(parsed.content || "");
+    setBrand(parsed.brand || "");
+    setAudience(parsed.audience || "");
+    setPurpose(parsed.purpose || "");
+    setSkillValue(parsed.skillValue || "1");
+    setSavedMessage("임시 저장 자료를 불러왔습니다.");
+  }
+
+  function fillSample() {
+    setContent(samples[activeId]);
+    if (!title) {
+      setTitle(activeWorkflow.label);
+    }
+    setSavedMessage("예시를 넣었습니다. 그대로 바꿔서 써보세요.");
+  }
+
+  function resetInput() {
+    setTitle("");
+    setContent("");
+    setBrand("");
+    setAudience("");
+    setPurpose("");
+    setSkillValue("1");
+    setSavedMessage("입력칸을 비웠습니다.");
+  }
 
   return (
     <main className="app-shell">
@@ -210,6 +287,27 @@ function App() {
 
         <div className="workspace-grid">
           <section className="input-panel" aria-label="자료 입력">
+            <div className="quick-actions" aria-label="빠른 작업">
+              <button onClick={fillSample} type="button">
+                <Sparkles size={16} aria-hidden="true" />
+                예시 넣기
+              </button>
+              <button onClick={saveDraft} type="button">
+                <Save size={16} aria-hidden="true" />
+                임시 저장
+              </button>
+              <button onClick={loadDraft} type="button">
+                <FolderOpen size={16} aria-hidden="true" />
+                불러오기
+              </button>
+              <button onClick={resetInput} type="button">
+                <RotateCcw size={16} aria-hidden="true" />
+                비우기
+              </button>
+            </div>
+
+            {savedMessage && <p className="status-message">{savedMessage}</p>}
+
             <label>
               제목 또는 맥락
               <input
@@ -279,8 +377,18 @@ function App() {
 
           <section className="result-panel" aria-label="결과">
             <div className="result-header">
-              <strong>자동 생성 결과</strong>
-              <span>복사해서 문서, 메모, 다른 AI에 바로 붙여넣기</span>
+              <div>
+                <strong>자동 생성 결과</strong>
+                <span>복사하거나 Markdown 파일로 저장할 수 있습니다.</span>
+              </div>
+              <button
+                className="download-button"
+                onClick={() => downloadMarkdown({ activeId, title, result })}
+                type="button"
+              >
+                <Download size={16} aria-hidden="true" />
+                다운로드
+              </button>
             </div>
             <pre>{result}</pre>
           </section>

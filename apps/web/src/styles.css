@@ -146,6 +146,42 @@ h1 {
   background: #0e5d4c;
 }
 
+.quick-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.quick-actions button,
+.download-button {
+  align-items: center;
+  background: #f3f6fa;
+  border: 1px solid #cfd7e3;
+  border-radius: 8px;
+  color: #293548;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 10px;
+}
+
+.quick-actions button:hover,
+.download-button:hover {
+  background: #e8eef6;
+}
+
+.status-message {
+  background: #f6fbff;
+  border: 1px solid #cde3f5;
+  border-radius: 8px;
+  color: #24506e;
+  font-size: 13px;
+  margin: 0;
+  padding: 10px 12px;
+}
+
 .guide-bubble {
   background: #fff7db;
   border: 1px solid #e6dcae;
@@ -242,7 +278,7 @@ textarea {
 }
 
 .result-header {
-  align-items: baseline;
+  align-items: center;
   border-bottom: 1px solid #dde2ea;
   display: flex;
   gap: 10px;
@@ -250,9 +286,19 @@ textarea {
   padding: 14px 16px;
 }
 
+.result-header strong,
+.result-header span {
+  display: block;
+}
+
 .result-header span {
   color: #637083;
   font-size: 13px;
+  margin-top: 2px;
+}
+
+.download-button {
+  flex-shrink: 0;
 }
 
 pre {
@@ -312,6 +358,7 @@ pre {
   }
 
   .workflow-list,
+  .quick-actions,
   .split-fields {
     grid-template-columns: 1fr;
   }
