@@ -280,6 +280,71 @@ h1 {
   width: 18px;
 }
 
+.project-vault {
+  background: #fffdfa;
+  border: 2px solid #15181f;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.project-vault-head {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.project-vault-head strong,
+.project-vault-head span {
+  display: block;
+}
+
+.project-vault-head span {
+  color: #626875;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.project-vault-head button,
+.project-vault-controls button {
+  align-items: center;
+  background: #15181f;
+  border: 1px solid #15181f;
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 6px;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.project-vault-head button:hover,
+.project-vault-controls button:hover {
+  background: var(--accent);
+  color: #15181f;
+}
+
+.project-vault-controls {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+}
+
+.project-vault-controls .ghost-danger {
+  background: #fffdfa;
+  color: #15181f;
+}
+
+.project-vault-controls .ghost-danger:hover {
+  background: #ffddd6;
+}
+
 .storage-strip {
   display: grid;
   gap: 10px;
@@ -591,12 +656,18 @@ pre {
   .workspace-grid,
   .storage-strip,
   .studio-strip,
-  .workflow-map {
+  .workflow-map,
+  .project-vault-controls {
     grid-template-columns: 1fr;
   }
 
   .workflow-map i {
     display: none;
+  }
+
+  .project-vault-head {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

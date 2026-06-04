@@ -116,6 +116,20 @@ const workflowMap = [
   { id: "table", step: "+", label: "표/성과 분석" },
 ];
 
+const PROJECT_STORAGE_KEY = "my-workbench:projects";
+
+function readProjects() {
+  try {
+    return JSON.parse(localStorage.getItem(PROJECT_STORAGE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function writeProjects(projects) {
+  localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
+}
+
 function lines(content) {
   return content
     .replace(/\r\n/g, "\n")
@@ -731,6 +745,9 @@ function App() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [analyzedContent, setAnalyzedContent] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   const [brand, setBrand] = useState("");
   const [audience, setAudience] = useState("");
   const [purpose, setPurpose] = useState("");
@@ -769,6 +786,10 @@ function App() {
     setSavedMessage("");
   }, [activeId]);
 
+  useEffect(() => {
+    setProjects(readProjects());
+  }, []);
+
   function saveDraft() {
     localStorage.setItem(
       draftKey,
@@ -803,6 +824,70 @@ function App() {
     setSkillValue(parsed.skillValue || "policy");
     setPlanFormat(parsed.planFormat || "government");
     setSavedMessage("임시 저장 자료를 불러왔습니다.");
+  }
+
+  function currentProjectSnapshot(id = selectedProjectId) {
+    const now = new Date().toISOString();
+    return {
+      id: id || `project-${Date.now()}`,
+      name: projectName.trim() || title.trim() || "이름 없는 프로젝트",
+      updatedAt: now,
+      activeId,
+      title,
+      content,
+      analyzedContent,
+      result,
+      brand,
+      audience,
+      purpose,
+      skillValue,
+      planFormat,
+    };
+  }
+
+  function saveProject() {
+    const snapshot = currentProjectSnapshot();
+    const nextProjects = [
+      snapshot,
+      ...projects.filter((project) => project.id !== snapshot.id),
+    ].slice(0, 30);
+
+    writeProjects(nextProjects);
+    setProjects(nextProjects);
+    setSelectedProjectId(snapshot.id);
+    setProjectName(snapshot.name);
+    setSavedMessage("프로젝트 저장함에 저장했습니다.");
+  }
+
+  function loadProject(projectId) {
+    const project = projects.find((item) => item.id === projectId);
+    if (!project) return;
+
+    setSelectedProjectId(project.id);
+    setProjectName(project.name || "");
+    setActiveId(project.activeId || "notice");
+    setTitle(project.title || project.name || "");
+    setContent(project.content || "");
+    setAnalyzedContent(project.analyzedContent || "");
+    setBrand(project.brand || "");
+    setAudience(project.audience || "");
+    setPurpose(project.purpose || "");
+    setSkillValue(project.skillValue || "policy");
+    setPlanFormat(project.planFormat || "government");
+    setSavedMessage("프로젝트를 불러왔습니다. 수정 후 다시 저장할 수 있습니다.");
+  }
+
+  function deleteProject() {
+    if (!selectedProjectId) {
+      setSavedMessage("삭제할 프로젝트를 먼저 선택하세요.");
+      return;
+    }
+
+    const nextProjects = projects.filter((project) => project.id !== selectedProjectId);
+    writeProjects(nextProjects);
+    setProjects(nextProjects);
+    setSelectedProjectId("");
+    setSavedMessage("선택한 프로젝트를 삭제했습니다.");
   }
 
   function openLocalFilePicker() {
@@ -983,6 +1068,46 @@ function App() {
               {index < workflowMap.length - 1 && <i aria-hidden="true" />}
             </React.Fragment>
           ))}
+        </section>
+
+        <section className="project-vault" aria-label="프로젝트 저장함">
+          <div className="project-vault-head">
+            <div>
+              <strong>프로젝트 저장함</strong>
+              <span>자료, 분석 결과, 현재 단계를 한 묶음으로 저장합니다.</span>
+            </div>
+            <button onClick={saveProject} type="button">
+              <Save size={16} aria-hidden="true" />
+              프로젝트 저장
+            </button>
+          </div>
+          <div className="project-vault-controls">
+            <label>
+              프로젝트 이름
+              <input
+                onChange={(event) => setProjectName(event.target.value)}
+                placeholder="예: 2026 소상공인 AI 지원사업"
+                value={projectName}
+              />
+            </label>
+            <label>
+              저장된 프로젝트
+              <select
+                onChange={(event) => loadProject(event.target.value)}
+                value={selectedProjectId}
+              >
+                <option value="">프로젝트 선택</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="ghost-danger" onClick={deleteProject} type="button">
+              삭제
+            </button>
+          </div>
         </section>
 
         <section className="storage-strip" aria-label="저장 방식 안내">
