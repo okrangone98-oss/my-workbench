@@ -8,6 +8,7 @@ import {
   Download,
   FileSearch,
   FileText,
+  FilePlus2,
   FolderOpen,
   Megaphone,
   Network,
@@ -31,6 +32,13 @@ const workflows = [
     short: "공고문에서 요구사항, 준비자료, 위험요소를 뽑습니다.",
     icon: FileSearch,
     accent: "cyan",
+  },
+  {
+    id: "plan",
+    label: "사업계획서 초안",
+    short: "분석된 공고문과 아이디어를 사업계획서 목차와 초안으로 이어갑니다.",
+    icon: FilePlus2,
+    accent: "amber",
   },
   {
     id: "marketing",
@@ -71,11 +79,19 @@ const skillChoices = [
   { value: "review", label: "AI 답변 검토" },
 ];
 
+const planFormats = [
+  { value: "government", label: "정부지원사업 사업계획서" },
+  { value: "policy", label: "정책 제안서" },
+  { value: "startup", label: "창업/서비스 사업계획서" },
+];
+
 const samples = {
   policy:
     "민원인이 온라인 신청 절차가 너무 복잡하고 처리 상황을 알기 어렵다고 말했습니다. 담당자는 문의 전화가 반복되어 업무가 지연된다고 합니다.",
   notice:
     "지역 소상공인 디지털 전환 지원사업 공고문입니다. 지원대상, 제출서류, 평가기준, 예산, 기간 내용을 여기에 붙여넣으세요.",
+  plan:
+    "공고문 분석 결과와 내 사업 아이디어를 여기에 붙여넣으세요. 예: 지역 소상공인에게 AI 업무 자동화 교육과 실습 템플릿을 제공한다.",
   marketing:
     "AI 업무 자동화 컨설팅을 처음 접하는 1인 사업자를 위한 쉬운 콘텐츠",
   table:
@@ -268,6 +284,179 @@ ${numbered([
     "사업 필요성, 대상자, 실행계획, 성과지표가 연결되도록 사업 논리를 만들어줘.",
     "심사위원 관점에서 부족해 보이는 부분과 보완 질문을 뽑아줘.",
   ])}
+`;
+}
+
+function renderPlan({ title, content, planFormat }) {
+  const subject = title || "사업계획서 초안";
+  const format = planFormats.find((item) => item.value === planFormat);
+  if (!content.trim()) {
+    return `# ${subject}
+
+공고문 분석 결과와 내 사업 아이디어를 붙여넣고 [분석하기]를 누르세요.
+
+## 추천 흐름
+1. 공고문 분석을 먼저 실행합니다.
+2. 결과 아래의 [사업계획서 초안으로] 버튼을 누릅니다.
+3. 내 아이디어를 조금 더 적고 다시 [분석하기]를 누릅니다.
+`;
+  }
+
+  if (planFormat === "policy") {
+    return `# ${subject}
+
+양식: ${format?.label}
+
+## 1. 제안 배경
+${firstLines(content, 3).join(" ")}
+
+## 2. 현황과 문제점
+${bullet([
+      "현재 제도, 서비스, 현장 운영에서 발생하는 문제를 구체화합니다.",
+      "시민, 이용자, 담당자 중 누가 어떤 불편을 겪는지 분리합니다.",
+      "반복 민원, 처리 지연, 정보 부족, 접근성 문제를 근거로 제시합니다.",
+    ])}
+
+## 3. 정책 목표
+${bullet([
+      "시민이 더 쉽게 이해하고 이용할 수 있는 서비스 구현",
+      "담당자의 반복 업무 감소",
+      "처리 과정의 투명성과 예측 가능성 개선",
+    ])}
+
+## 4. 추진 과제
+${numbered([
+      "신청과 안내 절차를 사용자 관점으로 재정리합니다.",
+      "반복 문의를 줄이는 FAQ, 체크리스트, 안내문을 만듭니다.",
+      "진행 상태 확인 지점을 명확히 합니다.",
+      "성과지표를 정해 개선 효과를 기록합니다.",
+    ])}
+
+## 5. 기대효과
+${bullet(["민원 감소", "처리 시간 단축", "시민 만족도 향상", "담당자 업무 부담 완화"])}
+
+## 6. 추가 보완 필요사항
+${numbered([
+      "관련 법령과 내부 규정을 확인해야 합니다.",
+      "예산과 인력 범위를 확인해야 합니다.",
+      "실제 이용자 의견을 추가로 수집해야 합니다.",
+    ])}
+`;
+  }
+
+  if (planFormat === "startup") {
+    return `# ${subject}
+
+양식: ${format?.label}
+
+## 1. 서비스 개요
+${firstLines(content, 2).join(" ")}
+
+## 2. 고객 문제
+${bullet([
+      "고객이 현재 어떤 불편을 겪는지 설명합니다.",
+      "기존 대안이 왜 충분하지 않은지 정리합니다.",
+      "문제가 자주 반복되거나 비용을 만드는 지점을 제시합니다.",
+    ])}
+
+## 3. 해결 방법
+${bullet([
+      "핵심 기능 또는 서비스 제공 방식을 설명합니다.",
+      "고객이 처음 접해도 이해하기 쉬운 흐름으로 구성합니다.",
+      "자동화와 사람의 검토가 섞이는 지점을 명확히 합니다.",
+    ])}
+
+## 4. 수익 모델
+${bullet(["무료 체험 또는 기본 기능", "월 구독", "컨설팅/교육 패키지", "고급 분석 또는 템플릿 판매"])}
+
+## 5. 실행 계획
+${numbered(["MVP 제작", "초기 사용자 테스트", "콘텐츠와 사례 확보", "유료 전환 실험", "반복 개선"])}
+
+## 6. 핵심 지표
+${bullet(["방문자 수", "활성 사용자", "저장/다운로드 수", "문의 전환", "유료 전환"])}
+`;
+  }
+
+  return `# ${subject}
+
+양식: ${format?.label || "정부지원사업 사업계획서"}
+
+## 1. 사업명
+${subject}
+
+## 2. 사업 한 줄 설명
+${firstLines(content, 1).join(" ")}
+
+## 3. 사업 필요성
+${bullet([
+    "공고문에서 요구하는 문제와 현재 현장의 불편을 연결해야 합니다.",
+    "대상자가 왜 지금 이 사업을 필요로 하는지 근거를 제시해야 합니다.",
+    "가능하면 민원, 수요, 매출, 시간 절감 같은 숫자 근거를 붙이세요.",
+  ])}
+
+## 4. 지원 대상 및 수혜자
+${bullet(
+    findByKeywords(
+      content,
+      ["대상", "소상공인", "청년", "시민", "고객", "이용자"],
+      "지원 대상과 실제 수혜자를 구체적으로 적어야 합니다.",
+    ),
+  )}
+
+## 5. 세부 실행 계획
+${numbered([
+    "사전 진단: 대상자의 현재 문제와 준비 수준을 확인합니다.",
+    "핵심 실행: 교육, 컨설팅, 도구 제공, 실습 등 주요 활동을 운영합니다.",
+    "성과 정리: 참여자 변화, 매출/시간/문의 감소 같은 지표를 기록합니다.",
+    "확산: 우수 사례를 콘텐츠나 보고서로 정리해 다음 사업으로 연결합니다.",
+  ])}
+
+## 6. 예산 편성 방향
+${bullet([
+    "인건비 또는 강사비",
+    "콘텐츠, 교재, 템플릿 제작비",
+    "홍보와 참여자 모집 비용",
+    "운영 도구와 소프트웨어 비용",
+    "성과 측정과 결과보고 비용",
+  ])}
+
+## 7. 성과지표
+${bullet([
+    "참여자 수와 완료율",
+    "업무 시간 절감",
+    "문의 또는 민원 감소",
+    "매출, 전환, 방문 등 사업 성과",
+    "만족도와 재참여 의향",
+  ])}
+
+## 8. 기대효과
+${bullet([
+    "대상자의 문제 해결 역량 향상",
+    "업무 시간 절감",
+    "디지털 도구 활용률 증가",
+    "지원사업 종료 후에도 활용 가능한 자료 축적",
+  ])}
+
+## 9. 리스크와 보완책
+${bullet([
+    "참여자의 디지털 역량 차이: 난이도별 자료를 제공합니다.",
+    "성과 측정의 어려움: 시작 전후 비교 지표를 정합니다.",
+    "일회성 교육 위험: 템플릿과 후속 점검을 제공합니다.",
+  ])}
+
+## 10. 보완 질문
+${numbered([
+    "이 사업의 핵심 대상자는 누구인가요?",
+    "대상자가 지금 가장 크게 겪는 문제는 무엇인가요?",
+    "예산과 기간 안에서 실제로 제공할 수 있는 활동은 무엇인가요?",
+    "심사위원이 믿을 수 있는 성과 근거는 무엇인가요?",
+  ])}
+
+## AI에게 이어서 물어볼 질문
+아래 내용을 바탕으로 정부지원사업 제출용 사업계획서를 더 구체적으로 작성해줘. 항목은 사업명, 사업 필요성, 지원 대상, 목표, 세부 실행계획, 예산 편성 방향, 성과지표, 기대효과, 리스크와 보완책으로 나눠줘.
+
+[자료]
+${content}
 `;
 }
 
@@ -470,6 +659,7 @@ function App() {
   const [audience, setAudience] = useState("");
   const [purpose, setPurpose] = useState("");
   const [skillValue, setSkillValue] = useState("policy");
+  const [planFormat, setPlanFormat] = useState("government");
   const [copied, setCopied] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
 
@@ -480,6 +670,9 @@ function App() {
   const result = useMemo(() => {
     if (activeId === "policy") return renderPolicy({ title, content: analyzedContent });
     if (activeId === "notice") return renderNotice({ title, content: analyzedContent });
+    if (activeId === "plan") {
+      return renderPlan({ title, content: analyzedContent, planFormat });
+    }
     if (activeId === "marketing") {
       return renderMarketing({ title, content: analyzedContent, brand, audience });
     }
@@ -488,7 +681,7 @@ function App() {
       return renderQuestion({ title, content: analyzedContent, skillValue });
     }
     return renderReview({ title, content: analyzedContent, purpose });
-  }, [activeId, analyzedContent, audience, brand, purpose, skillValue, title]);
+  }, [activeId, analyzedContent, audience, brand, planFormat, purpose, skillValue, title]);
 
   const tablePreview = useMemo(() => {
     return activeId === "table" ? parseTable(analyzedContent) : null;
@@ -510,6 +703,7 @@ function App() {
         audience,
         purpose,
         skillValue,
+        planFormat,
       }),
     );
     setSavedMessage("브라우저에 임시 저장했습니다.");
@@ -530,6 +724,7 @@ function App() {
     setAudience(parsed.audience || "");
     setPurpose(parsed.purpose || "");
     setSkillValue(parsed.skillValue || "policy");
+    setPlanFormat(parsed.planFormat || "government");
     setSavedMessage("임시 저장 자료를 불러왔습니다.");
   }
 
@@ -548,6 +743,14 @@ function App() {
     );
   }
 
+  function continueToWorkflow(nextId, nextTitle) {
+    setActiveId(nextId);
+    setTitle(nextTitle || title);
+    setContent(result);
+    setAnalyzedContent(result);
+    setSavedMessage("이전 결과를 다음 단계로 넘겼습니다. 필요한 내용을 보완한 뒤 다시 분석하세요.");
+  }
+
   function resetInput() {
     setTitle("");
     setContent("");
@@ -556,6 +759,7 @@ function App() {
     setAudience("");
     setPurpose("");
     setSkillValue("policy");
+    setPlanFormat("government");
     setSavedMessage("입력칸을 비웠습니다.");
   }
 
@@ -622,15 +826,15 @@ function App() {
         <section className="studio-strip" aria-label="작업 흐름">
           <div>
             <strong>01</strong>
-            <span>자료 붙여넣기</span>
+            <span>자료 분석</span>
           </div>
           <div>
             <strong>02</strong>
-            <span>구조화하기</span>
+            <span>초안 작성</span>
           </div>
           <div>
             <strong>03</strong>
-            <span>복사 또는 저장</span>
+            <span>검토와 저장</span>
           </div>
         </section>
 
@@ -718,6 +922,22 @@ function App() {
               </label>
             )}
 
+            {activeId === "plan" && (
+              <label>
+                어떤 양식으로 작성할까요?
+                <select
+                  onChange={(event) => setPlanFormat(event.target.value)}
+                  value={planFormat}
+                >
+                  {planFormats.map((format) => (
+                    <option key={format.value} value={format.value}>
+                      {format.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             {activeId === "review" && (
               <label>
                 사용 목적
@@ -760,6 +980,80 @@ function App() {
                 <Download size={16} aria-hidden="true" />
                 다운로드
               </button>
+            </div>
+            <div className="next-step-panel" aria-label="다음 단계">
+              <strong>다음 단계</strong>
+              <div>
+                {activeId === "notice" && (
+                  <>
+                    <button
+                      onClick={() => continueToWorkflow("plan", "공고문 기반 사업계획서")}
+                      type="button"
+                    >
+                      사업계획서 초안으로
+                    </button>
+                    <button
+                      onClick={() => continueToWorkflow("question", "공고문 분석 후 AI 질문")}
+                      type="button"
+                    >
+                      AI 질문으로
+                    </button>
+                  </>
+                )}
+                {activeId === "plan" && (
+                  <>
+                    <button
+                      onClick={() => continueToWorkflow("review", "사업계획서 초안 검토")}
+                      type="button"
+                    >
+                      검토 단계로
+                    </button>
+                    <button
+                      onClick={() => continueToWorkflow("question", "사업계획서 보완 질문")}
+                      type="button"
+                    >
+                      보완 질문 만들기
+                    </button>
+                  </>
+                )}
+                {activeId === "policy" && (
+                  <button
+                    onClick={() => continueToWorkflow("question", "정책 개선 질문")}
+                    type="button"
+                  >
+                    AI 질문으로
+                  </button>
+                )}
+                {activeId === "table" && (
+                  <button
+                    onClick={() => continueToWorkflow("question", "표 분석 후 AI 질문")}
+                    type="button"
+                  >
+                    더 깊은 분석 질문으로
+                  </button>
+                )}
+                {activeId === "question" && (
+                  <button
+                    onClick={() => continueToWorkflow("review", "AI 답변 검토")}
+                    type="button"
+                  >
+                    답변 검토로
+                  </button>
+                )}
+                {activeId === "marketing" && (
+                  <button
+                    onClick={() => continueToWorkflow("review", "콘텐츠 초안 검토")}
+                    type="button"
+                  >
+                    콘텐츠 검토로
+                  </button>
+                )}
+                {activeId === "review" && (
+                  <button onClick={() => downloadMarkdown({ activeId, title, result })} type="button">
+                    최종 결과 저장
+                  </button>
+                )}
+              </div>
             </div>
             {activeId === "table" && tablePreview?.rows.length > 0 && (
               <div className="table-preview" aria-label="표 미리보기">

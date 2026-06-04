@@ -386,6 +386,41 @@ textarea {
   flex-shrink: 0;
 }
 
+.next-step-panel {
+  background: #15181f;
+  border-bottom: 2px solid #15181f;
+  color: #f7f4ec;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.next-step-panel strong {
+  color: var(--accent);
+}
+
+.next-step-panel div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.next-step-panel button {
+  background: #f7f4ec;
+  border: 1px solid #f7f4ec;
+  border-radius: 8px;
+  color: #15181f;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.next-step-panel button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .table-help {
   background: #f4f2ed;
   border: 1px dashed #15181f;
