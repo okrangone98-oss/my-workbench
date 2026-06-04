@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BarChart3,
@@ -21,8 +21,8 @@ import "./styles.css";
 const workflows = [
   {
     id: "policy",
-    label: "정책 문제 구조화",
-    short: "민원, 회의 메모, 현장 의견을 정책 판단 재료로 바꿉니다.",
+    label: "문제 정리",
+    short: "민원, 회의 메모, 현장 의견을 해결해야 할 쟁점으로 정리합니다.",
     icon: Network,
     accent: "lime",
   },
@@ -71,7 +71,7 @@ const workflows = [
 ];
 
 const skillChoices = [
-  { value: "policy", label: "정책 문제 구조화" },
+  { value: "policy", label: "문제 정리" },
   { value: "service", label: "시민 서비스 개선" },
   { value: "planning", label: "사업계획서 준비" },
   { value: "marketing", label: "마케팅 콘텐츠 만들기" },
@@ -106,6 +106,14 @@ const storageSteps = [
   "PC 자료는 로컬 data 폴더에 보관",
   "모바일 결과는 복사하거나 다운로드",
   "다음 단계는 Google Drive 저장",
+];
+
+const workflowMap = [
+  { id: "notice", step: "1", label: "공고문 분석" },
+  { id: "plan", step: "2", label: "사업계획서 초안" },
+  { id: "question", step: "3", label: "AI 보완 질문" },
+  { id: "review", step: "4", label: "검토" },
+  { id: "table", step: "+", label: "표/성과 분석" },
 ];
 
 function lines(content) {
@@ -173,15 +181,37 @@ function formatNumber(value) {
     : value.toLocaleString("ko-KR", { maximumFractionDigits: 2 });
 }
 
+async function extractPdfText(file) {
+  const pdfjs = await import("pdfjs-dist");
+  const worker = await import("pdfjs-dist/build/pdf.worker.mjs?url");
+  pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+
+  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+  const pages = [];
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+    const text = textContent.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    pages.push(`[${pageNumber}쪽]\n${text}`);
+  }
+
+  return pages.join("\n\n");
+}
+
 function renderPolicy({ title, content }) {
-  const subject = title || "정책 문제 구조화";
+  const subject = title || "문제 정리";
   if (!content.trim()) {
     return `# ${subject}
 
 자료를 붙여넣은 뒤 왼쪽의 [분석하기] 버튼을 누르면 결과가 생성됩니다.
 
 ## 지금 할 일
-1. 민원, 회의 메모, 현장 의견 같은 자료를 붙여넣습니다.
+1. 민원, 회의 메모, 현장 의견 같은 자료를 붙여넣거나 파일로 불러옵니다.
 2. [분석하기]를 누릅니다.
 3. 오른쪽 결과를 복사하거나 다운로드합니다.
 `;
@@ -411,7 +441,53 @@ ${numbered([
     "확산: 우수 사례를 콘텐츠나 보고서로 정리해 다음 사업으로 연결합니다.",
   ])}
 
-## 6. 예산 편성 방향
+## 6. 서비스 디자인
+### 사용자 여정
+${numbered([
+    "인지: 대상자가 사업을 알게 되는 접점과 메시지를 설계합니다.",
+    "신청: 신청 과정에서 필요한 서류와 입력 항목을 최소화합니다.",
+    "진단: 대상자의 현재 수준과 문제를 빠르게 확인합니다.",
+    "참여: 교육, 컨설팅, 실습, 템플릿 제공 등 핵심 경험을 제공합니다.",
+    "적용: 실제 업무나 생활에 적용하도록 후속 과제를 제시합니다.",
+    "성과 확인: 참여 전후 변화를 기록하고 사례를 수집합니다.",
+  ])}
+
+### 디자인 원칙
+${bullet([
+    "초보자도 이해할 수 있는 언어를 사용합니다.",
+    "복잡한 절차는 체크리스트와 예시로 바꿉니다.",
+    "AI 자동화와 사람의 최종 판단을 분리합니다.",
+    "모바일과 PC에서 모두 이어서 볼 수 있게 자료를 저장합니다.",
+  ])}
+
+## 7. 서비스 블루프린트
+| 단계 | 사용자 행동 | 화면/자료 | 운영자 행동 | 확인 지표 |
+| --- | --- | --- | --- | --- |
+| 모집 | 공고 확인 | 안내문, 신청서 | 홍보와 문의 응대 | 신청 수 |
+| 진단 | 현재 문제 입력 | 진단 질문지 | 문제 유형 분류 | 진단 완료율 |
+| 실행 | 교육/실습 참여 | 템플릿, 예시 | 코칭과 피드백 | 참여 완료율 |
+| 적용 | 자기 업무에 적용 | 결과물, 체크리스트 | 보완 안내 | 적용 사례 수 |
+| 평가 | 만족도 응답 | 설문, 성과표 | 결과 분석 | 만족도, 개선율 |
+
+## 8. 논리모델
+| 구분 | 내용 |
+| --- | --- |
+| 투입 | 예산, 운영 인력, 교육 자료, AI 도구, 협력기관 |
+| 활동 | 사전 진단, 교육, 실습, 컨설팅, 후속 점검 |
+| 산출 | 참여자 수, 교육 횟수, 제작된 결과물, 상담 건수 |
+| 단기 성과 | 이해도 향상, 업무 시간 절감, 도구 활용 증가 |
+| 중장기 성과 | 매출/전환 개선, 민원 감소, 지속 가능한 운영 역량 확보 |
+
+## 9. 성과지표 설계
+${bullet([
+    "투입 지표: 예산 집행률, 운영 인력 투입 시간",
+    "과정 지표: 신청 수, 참여율, 완료율, 문의 응답 시간",
+    "산출 지표: 결과물 수, 템플릿 활용 수, 컨설팅 완료 건수",
+    "성과 지표: 업무 시간 절감률, 만족도, 재참여 의향, 매출/문의 변화",
+    "학습 지표: 다음 회차에서 개선할 병목과 사용자 피드백",
+  ])}
+
+## 10. 예산 편성 방향
 ${bullet([
     "인건비 또는 강사비",
     "콘텐츠, 교재, 템플릿 제작비",
@@ -420,7 +496,7 @@ ${bullet([
     "성과 측정과 결과보고 비용",
   ])}
 
-## 7. 성과지표
+## 11. 핵심 성과지표 후보
 ${bullet([
     "참여자 수와 완료율",
     "업무 시간 절감",
@@ -429,7 +505,7 @@ ${bullet([
     "만족도와 재참여 의향",
   ])}
 
-## 8. 기대효과
+## 12. 기대효과
 ${bullet([
     "대상자의 문제 해결 역량 향상",
     "업무 시간 절감",
@@ -437,14 +513,14 @@ ${bullet([
     "지원사업 종료 후에도 활용 가능한 자료 축적",
   ])}
 
-## 9. 리스크와 보완책
+## 13. 리스크와 보완책
 ${bullet([
     "참여자의 디지털 역량 차이: 난이도별 자료를 제공합니다.",
     "성과 측정의 어려움: 시작 전후 비교 지표를 정합니다.",
     "일회성 교육 위험: 템플릿과 후속 점검을 제공합니다.",
   ])}
 
-## 10. 보완 질문
+## 14. 보완 질문
 ${numbered([
     "이 사업의 핵심 대상자는 누구인가요?",
     "대상자가 지금 가장 크게 겪는 문제는 무엇인가요?",
@@ -453,7 +529,7 @@ ${numbered([
   ])}
 
 ## AI에게 이어서 물어볼 질문
-아래 내용을 바탕으로 정부지원사업 제출용 사업계획서를 더 구체적으로 작성해줘. 항목은 사업명, 사업 필요성, 지원 대상, 목표, 세부 실행계획, 예산 편성 방향, 성과지표, 기대효과, 리스크와 보완책으로 나눠줘.
+아래 내용을 바탕으로 정부지원사업 제출용 사업계획서를 더 구체적으로 작성해줘. 항목은 사업명, 사업 필요성, 지원 대상, 목표, 세부 실행계획, 서비스 디자인, 서비스 블루프린트, 논리모델, 성과지표, 예산 편성 방향, 기대효과, 리스크와 보완책으로 나눠줘.
 
 [자료]
 ${content}
@@ -662,6 +738,7 @@ function App() {
   const [planFormat, setPlanFormat] = useState("government");
   const [copied, setCopied] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
+  const fileInputRef = useRef(null);
 
   const activeWorkflow = workflows.find((workflow) => workflow.id === activeId);
   const ActiveIcon = activeWorkflow.icon;
@@ -728,6 +805,50 @@ function App() {
     setSavedMessage("임시 저장 자료를 불러왔습니다.");
   }
 
+  function openLocalFilePicker() {
+    fileInputRef.current?.click();
+  }
+
+  async function readLocalFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+      setSavedMessage("PDF를 읽는 중입니다. 잠시만 기다려주세요.");
+      try {
+        const text = await extractPdfText(file);
+        setContent(text);
+        setAnalyzedContent("");
+        if (!title) {
+          setTitle(file.name.replace(/\.[^.]+$/, ""));
+        }
+        setSavedMessage(`${file.name} PDF를 불러왔습니다. [분석하기]를 눌러 결과를 생성하세요.`);
+      } catch {
+        setSavedMessage("PDF 텍스트를 읽지 못했습니다. 스캔 이미지 PDF라면 먼저 OCR이 필요합니다.");
+      } finally {
+        event.target.value = "";
+      }
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      setContent(text);
+      setAnalyzedContent("");
+      if (!title) {
+        setTitle(file.name.replace(/\.[^.]+$/, ""));
+      }
+      setSavedMessage(`${file.name} 파일을 불러왔습니다. [분석하기]를 눌러 결과를 생성하세요.`);
+      event.target.value = "";
+    };
+    reader.onerror = () => {
+      setSavedMessage("파일을 읽지 못했습니다. txt, md, csv 파일로 다시 시도해보세요.");
+      event.target.value = "";
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
   function fillSample() {
     setContent(samples[activeId]);
     if (!title) setTitle(activeWorkflow.label);
@@ -761,6 +882,11 @@ function App() {
     setSkillValue("policy");
     setPlanFormat("government");
     setSavedMessage("입력칸을 비웠습니다.");
+  }
+
+  function moveToWorkflow(workflowId) {
+    setActiveId(workflowId);
+    setSavedMessage("단계를 이동했습니다. 입력 내용을 수정한 뒤 [분석하기]를 누르세요.");
   }
 
   return (
@@ -826,15 +952,15 @@ function App() {
         <section className="studio-strip" aria-label="작업 흐름">
           <div>
             <strong>01</strong>
-            <span>자료 분석</span>
+            <span>문제 분석</span>
           </div>
           <div>
             <strong>02</strong>
-            <span>초안 작성</span>
+            <span>서비스 설계</span>
           </div>
           <div>
             <strong>03</strong>
-            <span>검토와 저장</span>
+            <span>성과 검토</span>
           </div>
         </section>
 
@@ -842,6 +968,22 @@ function App() {
           <strong>오늘의 안내</strong>
           <span>{activeWorkflow.short}</span>
         </div>
+
+        <section className="workflow-map" aria-label="사업계획서 작성 흐름">
+          {workflowMap.map((item, index) => (
+            <React.Fragment key={item.id}>
+              <button
+                className={activeId === item.id ? "current" : ""}
+                onClick={() => moveToWorkflow(item.id)}
+                type="button"
+              >
+                <strong>{item.step}</strong>
+                <span>{item.label}</span>
+              </button>
+              {index < workflowMap.length - 1 && <i aria-hidden="true" />}
+            </React.Fragment>
+          ))}
+        </section>
 
         <section className="storage-strip" aria-label="저장 방식 안내">
           {storageSteps.map((step) => (
@@ -866,13 +1008,24 @@ function App() {
               </button>
               <button onClick={loadDraft} type="button">
                 <FolderOpen size={16} aria-hidden="true" />
-                불러오기
+                임시
+              </button>
+              <button onClick={openLocalFilePicker} type="button">
+                <FileText size={16} aria-hidden="true" />
+                파일
               </button>
               <button onClick={resetInput} type="button">
                 <RotateCcw size={16} aria-hidden="true" />
                 비우기
               </button>
             </div>
+            <input
+              accept=".txt,.md,.csv,.tsv,.json,.pdf,text/*,application/pdf"
+              className="file-input"
+              onChange={readLocalFile}
+              ref={fileInputRef}
+              type="file"
+            />
 
             {savedMessage && <p className="status-message">{savedMessage}</p>}
 

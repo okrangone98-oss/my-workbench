@@ -233,6 +233,53 @@ h1 {
   flex-shrink: 0;
 }
 
+.workflow-map {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(9, auto);
+  justify-content: start;
+  overflow-x: auto;
+}
+
+.workflow-map button {
+  align-items: center;
+  background: #fffdfa;
+  border: 2px solid #15181f;
+  border-radius: 8px;
+  color: #15181f;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  min-height: 46px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.workflow-map button.current,
+.workflow-map button:hover {
+  background: var(--accent);
+}
+
+.workflow-map button strong {
+  align-items: center;
+  background: #15181f;
+  border-radius: 999px;
+  color: #f7f4ec;
+  display: inline-flex;
+  font-size: 12px;
+  height: 24px;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.workflow-map i {
+  background: #15181f;
+  display: block;
+  height: 2px;
+  width: 18px;
+}
+
 .storage-strip {
   display: grid;
   gap: 10px;
@@ -274,7 +321,7 @@ h1 {
 .quick-actions {
   display: grid;
   gap: 8px;
-  grid-template-columns: 1.25fr repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.35fr repeat(5, minmax(0, 1fr));
 }
 
 .quick-actions button,
@@ -316,6 +363,10 @@ h1 {
   font-weight: 700;
   margin: 0;
   padding: 10px 12px;
+}
+
+.file-input {
+  display: none;
 }
 
 label {
@@ -539,8 +590,13 @@ pre {
 
   .workspace-grid,
   .storage-strip,
-  .studio-strip {
+  .studio-strip,
+  .workflow-map {
     grid-template-columns: 1fr;
+  }
+
+  .workflow-map i {
+    display: none;
   }
 }
 
