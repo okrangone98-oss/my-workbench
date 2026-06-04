@@ -73,6 +73,13 @@ coverage/
 *.db
 *.local-db.json
 
+# 6-1. Local brain data (원본 자료와 로컬 인덱스)
+data/brain/index.json
+data/brain/00_raw/
+data/brain/10_wiki/
+data/brain/20_projects/
+data/brain/30_skills/
+
 # 7. Local Archives
 archive_local/
 temp/

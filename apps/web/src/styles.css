@@ -1,0 +1,318 @@
+:root {
+  color: #1d2433;
+  font-family:
+    Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background: #f6f7f9;
+  font-synthesis: none;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 292px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #20242d;
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+}
+
+.brand {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.brand strong,
+.brand span {
+  display: block;
+}
+
+.brand span {
+  color: #b8c2d6;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.workflow-list {
+  display: grid;
+  gap: 8px;
+}
+
+.workflow-list button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #dbe4f3;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.workflow-list button:hover,
+.workflow-list button.active {
+  background: #f8fafc;
+  color: #172033;
+}
+
+.privacy-note {
+  align-items: flex-start;
+  border: 1px solid #3a4151;
+  border-radius: 8px;
+  color: #c7d1e2;
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  padding: 14px;
+}
+
+.privacy-note p {
+  font-size: 13px;
+  margin: 0;
+}
+
+.work-area {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+}
+
+.page-header {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  color: #637083;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+h1 {
+  align-items: center;
+  display: flex;
+  font-size: 30px;
+  gap: 10px;
+  letter-spacing: 0;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.copy-button {
+  align-items: center;
+  background: #16715f;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
+.copy-button:hover {
+  background: #0e5d4c;
+}
+
+.guide-bubble {
+  background: #fff7db;
+  border: 1px solid #e6dcae;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.guide-bubble strong {
+  color: #6f4e00;
+  flex-shrink: 0;
+}
+
+.storage-strip {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.storage-strip p {
+  background: #eaf4f1;
+  border: 1px solid #c6ded7;
+  border-radius: 8px;
+  color: #21443e;
+  font-size: 13px;
+  margin: 0;
+  padding: 12px;
+}
+
+.workspace-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(320px, 0.85fr) minmax(420px, 1.15fr);
+  min-height: 0;
+}
+
+.input-panel,
+.result-panel {
+  background: white;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.input-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+label {
+  color: #384455;
+  display: grid;
+  font-size: 14px;
+  font-weight: 700;
+  gap: 8px;
+}
+
+input,
+select,
+textarea {
+  background: #fbfcfe;
+  border: 1px solid #cfd7e3;
+  border-radius: 8px;
+  color: #1d2433;
+  outline: none;
+  padding: 11px 12px;
+  width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #16715f;
+  box-shadow: 0 0 0 3px rgba(22, 113, 95, 0.13);
+}
+
+textarea {
+  min-height: 310px;
+  resize: vertical;
+}
+
+.split-fields {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.result-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.result-header {
+  align-items: baseline;
+  border-bottom: 1px solid #dde2ea;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.result-header span {
+  color: #637083;
+  font-size: 13px;
+}
+
+pre {
+  color: #1f2937;
+  font-family:
+    "Noto Sans Mono CJK KR", "D2Coding", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  margin: 0;
+  min-height: 420px;
+  overflow: auto;
+  padding: 18px;
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    padding: 18px;
+  }
+
+  .workflow-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .privacy-note {
+    margin-top: 0;
+  }
+
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .storage-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .work-area {
+    padding: 18px;
+  }
+
+  .page-header,
+  .guide-bubble,
+  .result-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  .workflow-list,
+  .split-fields {
+    grid-template-columns: 1fr;
+  }
+}

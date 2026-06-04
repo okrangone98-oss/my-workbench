@@ -7,9 +7,11 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @my-work-bench/core && npm run build --workspace @my-work-bench/agents && npm run build --workspace @my-work-bench/skills && npm run build --workspace @my-work-bench/integrations && npm run build --workspace @my-work-bench/cli",
+    "build": "npm run build --workspace @my-work-bench/core && npm run build --workspace @my-work-bench/agents && npm run build --workspace @my-work-bench/skills && npm run build --workspace @my-work-bench/integrations && npm run build --workspace @my-work-bench/cli && npm run build --workspace @my-work-bench/web",
+    "build:web": "npm run build --workspace @my-work-bench/core && npm run build --workspace @my-work-bench/web",
     "boilerplate:init": "node scripts/init-boilerplate.mjs",
     "dev:cli": "npm run dev --workspace @my-work-bench/cli --",
+    "dev:web": "npm run dev --workspace @my-work-bench/web --",
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {

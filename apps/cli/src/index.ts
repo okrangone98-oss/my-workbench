@@ -73,7 +73,7 @@ function nowStamp(date = new Date()): string {
 }
 
 function readJsonFile<T>(filePath: string): T {
-  return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
+  return JSON.parse(fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "")) as T;
 }
 
 function writeTextFile(filePath: string, content: string): void {
@@ -101,8 +101,102 @@ function printHelp(): void {
   console.log("  migrate:kodari [rootPath]");
   console.log("  scan:folders [rootPath]");
   console.log("  apply:scan [state] [--apply] [scanJsonPath]");
+  console.log("  business:diagnose [businessName]");
+  console.log("  skill:menu [number|id]");
+  console.log("  brain:capture --kind <kind> --title <title> [--text <text>|--file <path>]");
+  console.log("  ai:question <number|id> [--text <text>|--file <path>]");
+  console.log("  policy:structure [--title <title>] [--text <text>|--file <path>]");
+  console.log("  ai:review [--purpose <purpose>] [--text <text>|--file <path>]");
+  console.log("  plan:notice [--title <title>] [--text <text>|--file <path>]");
+  console.log("  marketing:ideas --topic <topic> [--brand <brand>] [--audience <audience>]");
   console.log("");
   console.log(`Agents: ${listAgentNames().join(", ")}`);
+}
+
+type CliOptions = {
+  values: Record<string, string>;
+  flags: Set<string>;
+  rest: string[];
+};
+
+function parseCliOptions(args: string[]): CliOptions {
+  const values: Record<string, string> = {};
+  const flags = new Set<string>();
+  const rest: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--") {
+      continue;
+    }
+
+    if (!arg.startsWith("--")) {
+      rest.push(cleanCliText(arg));
+      continue;
+    }
+
+    const key = arg.slice(2);
+    const next = args[index + 1];
+    if (!next || next.startsWith("--")) {
+      flags.add(key);
+      continue;
+    }
+
+    values[key] = cleanCliText(next);
+    index += 1;
+  }
+
+  return { values, flags, rest };
+}
+
+function readStdinIfAvailable(): string {
+  if (process.stdin.isTTY) {
+    return "";
+  }
+
+  return fs.readFileSync(0, "utf8");
+}
+
+function readContentFromOptions(options: CliOptions): string {
+  if (options.values.text) {
+    return options.values.text;
+  }
+
+  if (options.values.file) {
+    const filePath = path.isAbsolute(options.values.file)
+      ? options.values.file
+      : path.join(repoRoot, options.values.file);
+    return fs.readFileSync(filePath, "utf8");
+  }
+
+  return readStdinIfAvailable();
+}
+
+function parseTags(value?: string): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
+}
+
+function appendJsonIndex<T>(filePath: string, record: T): T[] {
+  const existing = fs.existsSync(filePath) ? readJsonFile<T[]>(filePath) : [];
+  const next = [...existing, record];
+  writeJsonFile(filePath, next);
+  return next;
+}
+
+function safeFileSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
 }
 
 function latestFileByPrefix(prefix: string, extension: string): string | null {
@@ -530,6 +624,216 @@ async function runApplyScan(args: string[]): Promise<void> {
   );
 }
 
+async function runBusinessDiagnose(args: string[]): Promise<void> {
+  const businessName = cleanCliText(args.join(" ")) || "my-workbench";
+  const diagnosis = core.createBusinessAutomationDiagnosis({ businessName });
+  const markdown = core.renderBusinessAutomationDiagnosisMarkdown(diagnosis);
+  const slug = safeFileSlug(businessName) || "business";
+  const reportPath = path.join(
+    docsDir,
+    `business-diagnosis-${slug}-${todayStamp()}.md`,
+  );
+
+  writeTextFile(reportPath, markdown);
+  console.log(
+    JSON.stringify(
+      {
+        businessName,
+        reportPath,
+        opportunities: diagnosis.opportunities.length,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
+async function runSkillMenu(args: string[]): Promise<void> {
+  const [choiceValue] = args;
+  if (!choiceValue) {
+    console.log(core.renderSkillMenu());
+    return;
+  }
+
+  const choice = core.findSkillMenuChoice(choiceValue);
+  if (!choice) {
+    console.log(core.renderSkillMenu());
+    throw new Error(`unknown skill choice: ${choiceValue}`);
+  }
+
+  console.log(core.renderSkillChoiceGuide(choice));
+}
+
+async function runBrainCapture(args: string[]): Promise<void> {
+  const options = parseCliOptions(args);
+  const body = readContentFromOptions(options).trim();
+
+  if (options.flags.has("help") || !body) {
+    console.log(core.renderBrainCaptureKindMenu());
+    if (!body) {
+      console.log("");
+      console.log("저장할 자료가 없어서 안내만 보여줬습니다.");
+      console.log("자료는 --text, --file, 또는 파이프로 전달할 수 있습니다.");
+    }
+    return;
+  }
+
+  const title =
+    options.values.title ||
+    options.rest.join(" ").trim() ||
+    `자료 ${todayStamp()}`;
+  const kind = core.normalizeBrainCaptureKind(options.values.kind);
+  const source = options.values.source;
+  const tags = parseTags(options.values.tags);
+  const capture = core.createBrainCapture({
+    title,
+    body,
+    kind,
+    source,
+    tags,
+  });
+  const targetPath = path.join(dataDir, capture.record.relativePath);
+  const indexPath = path.join(dataDir, "brain", "index.json");
+
+  writeTextFile(targetPath, capture.markdown);
+  appendJsonIndex(indexPath, capture.record);
+
+  console.log(
+    [
+      "자료를 저장했습니다.",
+      "",
+      `- 제목: ${capture.record.title}`,
+      `- 종류: ${capture.record.kind}`,
+      `- 저장 위치: ${targetPath}`,
+      "",
+      "이제 이렇게 해보세요:",
+      "",
+      "1. 저장된 자료를 다시 열어 원문이 맞는지 확인하세요.",
+      "2. 아래 명령으로 AI에게 물어볼 질문을 만드세요.",
+      "3. AI 답변을 받으면 `ai:review`로 검토하세요.",
+      "",
+      `  npm run dev:cli -- ai:question 5 --file "${targetPath}"`,
+    ].join("\n"),
+  );
+}
+
+async function runAiQuestion(args: string[]): Promise<void> {
+  const options = parseCliOptions(args);
+  const [skillValue] = options.rest;
+  if (!skillValue || options.flags.has("help")) {
+    console.log(core.renderAiQuestionGuide());
+    return;
+  }
+
+  const content = readContentFromOptions(options);
+  const context = options.values.context;
+  const question = core.createAiQuestionFromSkillValue(
+    skillValue,
+    content,
+    context,
+  );
+
+  if (!question) {
+    console.log(core.renderAiQuestionGuide());
+    throw new Error(`unknown skill choice: ${skillValue}`);
+  }
+
+  console.log(question);
+}
+
+async function runPolicyStructure(args: string[]): Promise<void> {
+  const options = parseCliOptions(args);
+  const content = readContentFromOptions(options);
+  if (options.flags.has("help") || !content.trim()) {
+    console.log("정책/민원/서비스 자료를 문제 구조로 정리합니다.");
+    console.log("");
+    console.log("사용 예:");
+    console.log(
+      '  npm run dev:cli -- policy:structure -- --title "온라인 신청 민원" --text "민원 내용"',
+    );
+    console.log(
+      '  npm run dev:cli -- policy:structure -- --file "data/brain/00_raw/..."',
+    );
+    return;
+  }
+
+  const result = core.createPolicyStructure({
+    title: options.values.title,
+    content,
+    context: options.values.context,
+  });
+
+  console.log(core.renderPolicyStructureMarkdown(result));
+}
+
+async function runAiReview(args: string[]): Promise<void> {
+  const options = parseCliOptions(args);
+  const answer = readContentFromOptions(options);
+  if (options.flags.has("help") || !answer.trim()) {
+    console.log("AI가 만든 답변을 사람이 검토할 수 있는 표로 바꿉니다.");
+    console.log("");
+    console.log("사용 예:");
+    console.log(
+      '  npm run dev:cli -- ai:review -- --purpose "정책 답변 검토" --text "AI 답변"',
+    );
+    console.log('  npm run dev:cli -- ai:review -- --file "ai-answer.md"');
+    return;
+  }
+
+  const result = core.reviewAiOutput({
+    answer,
+    purpose: options.values.purpose,
+    source: options.values.source,
+  });
+
+  console.log(core.renderAiReviewMarkdown(result));
+}
+
+async function runPlanNotice(args: string[]): Promise<void> {
+  const options = parseCliOptions(args);
+  const content = readContentFromOptions(options);
+  if (options.flags.has("help") || !content.trim()) {
+    console.log("공고문이나 사업 안내문에서 요구사항, 준비자료, 체크리스트를 뽑습니다.");
+    console.log("");
+    console.log("사용 예:");
+    console.log(
+      '  npm run dev:cli -- plan:notice -- --title "청년 지원사업" --text "공고문 내용"',
+    );
+    console.log('  npm run dev:cli -- plan:notice -- --file "notice.md"');
+    return;
+  }
+
+  const result = core.analyzePlanningNotice({
+    title: options.values.title,
+    content,
+  });
+
+  console.log(core.renderPlanningNoticeMarkdown(result));
+}
+
+async function runMarketingIdeas(args: string[]): Promise<void> {
+  const options = parseCliOptions(args);
+  const topic = options.values.topic || options.rest.join(" ");
+  if (options.flags.has("help") || !topic.trim()) {
+    console.log("마케팅 콘텐츠 아이디어, 캡션 방향, 해시태그를 만듭니다.");
+    console.log("");
+    console.log("사용 예:");
+    console.log(
+      '  npm run dev:cli -- marketing:ideas -- --topic "온라인 신청 절차 개선" --brand "정책 서비스"',
+    );
+    return;
+  }
+
+  const result = core.createMarketingIdeas({
+    topic,
+    brand: options.values.brand,
+    audience: options.values.audience,
+    tone: options.values.tone,
+  });
+
+  console.log(core.renderMarketingIdeasMarkdown(result));
+}
+
 async function main(): Promise<void> {
   ensureDir(dataDir);
   ensureDir(docsDir);
@@ -572,6 +876,46 @@ async function main(): Promise<void> {
 
   if (command === "apply:scan") {
     await runApplyScan(args);
+    return;
+  }
+
+  if (command === "business:diagnose") {
+    await runBusinessDiagnose(args);
+    return;
+  }
+
+  if (command === "skill:menu") {
+    await runSkillMenu(args);
+    return;
+  }
+
+  if (command === "brain:capture") {
+    await runBrainCapture(args);
+    return;
+  }
+
+  if (command === "ai:question") {
+    await runAiQuestion(args);
+    return;
+  }
+
+  if (command === "policy:structure") {
+    await runPolicyStructure(args);
+    return;
+  }
+
+  if (command === "ai:review") {
+    await runAiReview(args);
+    return;
+  }
+
+  if (command === "plan:notice") {
+    await runPlanNotice(args);
+    return;
+  }
+
+  if (command === "marketing:ideas") {
+    await runMarketingIdeas(args);
     return;
   }
 

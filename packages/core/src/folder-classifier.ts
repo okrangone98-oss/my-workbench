@@ -46,8 +46,8 @@ export function classifyFolderByName(name: string): FolderClassification {
       "userfolders",
       "개발_202602",
       "진행중프로젝트",
-      "양양군농촌활성화센터_회사",
-      "오대훈 개인자료",
+      "양양군",
+      "개인자료",
       "docker_data",
       "photoshop 2020",
     ])

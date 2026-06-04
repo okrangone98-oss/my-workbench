@@ -32,6 +32,10 @@
 - [G드라이브1차적용결과_2026-03-07](./docs/G드라이브1차적용결과_2026-03-07.md)
 - [G드라이브2차적용결과_2026-03-07](./docs/G드라이브2차적용결과_2026-03-07.md)
 - [G드라이브3차적용결과_2026-03-07](./docs/G드라이브3차적용결과_2026-03-07.md)
+- [로컬 AI 업무본부 통합 설계](./docs/로컬AI업무본부_통합설계_2026-06-04.md)
+- [스킬 사용성 원칙](./docs/스킬사용성원칙_한글명령어_객관식.md)
+- [프로그램 개발 및 통합 계획](./docs/프로그램개발및통합계획_2026-06-04.md)
+- [레포 흡수 매핑](./docs/레포흡수매핑_2026-06-04.md)
 
 ## 현재 구조(v1)
 
@@ -58,9 +62,20 @@ npm run dev:cli -- migrate:kodari
 npm run dev:cli -- scan:folders G:\
 npm run dev:cli -- apply:scan
 npm run dev:cli -- apply:scan MOVE -- --apply
+npm run dev:cli -- business:diagnose "my-workbench"
+npm run dev:cli -- skill:menu
+npm run dev:cli -- skill:menu 3
+npm run dev:cli -- brain:capture -- --kind policy --title "민원 메모" --text "자료 내용"
+npm run dev:cli -- ai:question 1 -- --text "분석할 자료 내용"
+npm run dev:cli -- policy:structure -- --title "온라인 신청 민원" --text "민원 내용"
+npm run dev:cli -- ai:review -- --purpose "정책 답변 검토" --text "AI 답변"
+npm run dev:cli -- plan:notice -- --title "지원사업 공고" --text "공고문 내용"
+npm run dev:cli -- marketing:ideas -- --topic "온라인 신청 절차 개선" --brand "정책 서비스"
 npm run boilerplate:init -- --name company-ops-assistant --mode full
 pwsh -File scripts/apply-g-drive-phase1.ps1
 ```
+
+CLI 결과에는 처음 쓰는 사람도 따라갈 수 있도록 `안내`, `이렇게 사용하세요`, `다음 행동` 문구를 함께 표시합니다.
 
 ## 운영 원칙 요약
 
