@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BarChart3,
+  ArrowRight,
   Bot,
   ClipboardCheck,
   Copy,
@@ -15,8 +16,24 @@ import {
   RotateCcw,
   Save,
   Sparkles,
+  Check,
+  ChevronDown,
+  ExternalLink,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
 } from "lucide-react";
 import "./styles.css";
+import {
+  createTask,
+  deleteTask,
+  readTasks,
+  sortActiveTasks,
+  summarizeTasks,
+  updateTask,
+  writeTasks,
+} from "./workbench-tasks.js";
 
 const workflows = [
   {
@@ -117,6 +134,45 @@ const workflowMap = [
 ];
 
 const PROJECT_STORAGE_KEY = "my-workbench:projects";
+
+const taskStatusLabels = {
+  todo: "해야 할 일",
+  in_progress: "하고 있는 일",
+  blocked: "막힌 일",
+  done: "완료",
+};
+
+const taskStatusOptions = [
+  ["todo", "해야 할 일"],
+  ["in_progress", "하고 있는 일"],
+  ["blocked", "막힌 일"],
+  ["done", "완료"],
+];
+
+const emptyTaskForm = {
+  title: "",
+  status: "todo",
+  priority: "normal",
+  deadline: "",
+  projectName: "",
+  jiraUrl: "",
+  note: "",
+};
+
+function formatKoreanDate(date = new Date()) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(date);
+}
+
+function formatTaskDate(value) {
+  if (!value) return "날짜 없음";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(date);
+}
 
 function readProjects() {
   try {
@@ -755,6 +811,13 @@ function App() {
   const [planFormat, setPlanFormat] = useState("government");
   const [copied, setCopied] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
+  const [tasks, setTasks] = useState(() => readTasks());
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [taskForm, setTaskForm] = useState(emptyTaskForm);
+  const [taskMessage, setTaskMessage] = useState("");
   const fileInputRef = useRef(null);
 
   const activeWorkflow = workflows.find((workflow) => workflow.id === activeId);
@@ -777,6 +840,18 @@ function App() {
     return renderReview({ title, content: analyzedContent, purpose });
   }, [activeId, analyzedContent, audience, brand, planFormat, purpose, skillValue, title]);
 
+  const taskSummary = useMemo(() => summarizeTasks(tasks), [tasks]);
+  const activeTasks = useMemo(() => {
+    const sorted = sortActiveTasks(tasks);
+    return selectedStatus === "all"
+      ? sorted
+      : sorted.filter((task) => task.status === selectedStatus);
+  }, [selectedStatus, tasks]);
+  const completedTasks = useMemo(
+    () => tasks.filter((task) => task.status === "done").sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))),
+    [tasks],
+  );
+
   const tablePreview = useMemo(() => {
     return activeId === "table" ? parseTable(analyzedContent) : null;
   }, [activeId, analyzedContent]);
@@ -789,6 +864,81 @@ function App() {
   useEffect(() => {
     setProjects(readProjects());
   }, []);
+
+  function persistTasks(nextTasks) {
+    setTasks(nextTasks);
+    writeTasks(nextTasks);
+  }
+
+  function openTaskCreator() {
+    setEditingTaskId(null);
+    setTaskForm(emptyTaskForm);
+    setTaskMessage("");
+    setIsTaskFormOpen(true);
+  }
+
+  function openTaskEditor(task) {
+    setEditingTaskId(task.id);
+    setTaskForm({
+      title: task.title,
+      status: task.status,
+      priority: task.priority,
+      deadline: task.deadline,
+      projectName: task.projectName,
+      jiraUrl: task.jiraUrl,
+      note: task.note,
+    });
+    setTaskMessage("");
+    setIsTaskFormOpen(true);
+  }
+
+  function closeTaskForm() {
+    setIsTaskFormOpen(false);
+    setEditingTaskId(null);
+    setTaskForm(emptyTaskForm);
+    setTaskMessage("");
+  }
+
+  function handleTaskFormChange(event) {
+    const { name, value } = event.target;
+    setTaskForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleCreateTask(event) {
+    event.preventDefault();
+    try {
+      const task = createTask(taskForm.title);
+      persistTasks([task, ...tasks]);
+      closeTaskForm();
+    } catch {
+      setTaskMessage("할 일 제목을 적어주세요.");
+    }
+  }
+
+  function handleUpdateTask(event) {
+    event.preventDefault();
+    try {
+      const nextTasks = updateTask(tasks, editingTaskId, taskForm);
+      persistTasks(nextTasks);
+      closeTaskForm();
+    } catch {
+      setTaskMessage("할 일 제목을 적어주세요.");
+    }
+  }
+
+  function handleStatusChange(taskId, status) {
+    try {
+      persistTasks(updateTask(tasks, taskId, { status }));
+    } catch {
+      setTaskMessage("업무 상태를 바꾸지 못했습니다.");
+    }
+  }
+
+  function handleDeleteTask(taskId) {
+    if (!window.confirm("이 할 일을 삭제할까요?")) return;
+    persistTasks(deleteTask(tasks, taskId));
+    if (editingTaskId === taskId) closeTaskForm();
+  }
 
   function saveDraft() {
     localStorage.setItem(
@@ -1013,6 +1163,178 @@ function App() {
       </aside>
 
       <section className="work-area">
+        <section className="workbench-home" aria-labelledby="workbench-home-title">
+          <div className="workbench-hero">
+            <div>
+              <p className="workbench-kicker">MY WORKBENCH · PERSONAL COMMAND CENTER</p>
+              <h2 id="workbench-home-title">오늘의 업무</h2>
+              <p className="workbench-date">{formatKoreanDate()}</p>
+              <p className="workbench-intro">지금 해야 할 일부터 차분하게 정리해보세요.</p>
+            </div>
+            <button className="workbench-primary" onClick={openTaskCreator} type="button">
+              <Plus size={18} aria-hidden="true" />
+              할 일 추가
+            </button>
+          </div>
+
+          <div className="workbench-summary" aria-label="업무 요약">
+            {[
+              ["all", taskSummary.active, "해야 할 일", "아직 끝내지 않은 업무", "summary-blue"],
+              ["in_progress", taskSummary.inProgress, "하고 있는 일", "지금 진행 중인 업무", "summary-mint"],
+              ["blocked", taskSummary.blocked, "막힌 일", "도움이나 결정이 필요한 업무", "summary-coral"],
+              ["done", taskSummary.done, "완료한 일", "끝낸 업무", "summary-violet"],
+            ].map(([status, count, label, description, accent]) => (
+              <button
+                className={`workbench-summary-card ${accent} ${selectedStatus === status ? "selected" : ""}`}
+                key={status}
+                onClick={() => {
+                  if (status === "done") {
+                    setSelectedStatus("all");
+                    setShowCompleted(true);
+                    return;
+                  }
+                  setSelectedStatus(status);
+                }}
+                type="button"
+              >
+                <span>{label}</span>
+                <strong>{count}</strong>
+                <small>{description}</small>
+              </button>
+            ))}
+          </div>
+
+          {isTaskFormOpen && (
+            <form className="workbench-task-form" onSubmit={editingTaskId ? handleUpdateTask : handleCreateTask}>
+              <div className="workbench-form-heading">
+                <div>
+                  <span className="workbench-form-kicker">{editingTaskId ? "업무 수정" : "빠른 등록"}</span>
+                  <h3>{editingTaskId ? "업무 내용을 고쳐보세요" : "무엇을 해야 하나요?"}</h3>
+                </div>
+                <button aria-label="입력 닫기" className="icon-button" onClick={closeTaskForm} type="button">
+                  <X size={18} aria-hidden="true" />
+                </button>
+              </div>
+              <label className="workbench-title-field">
+                할 일 제목
+                <input
+                  autoFocus
+                  name="title"
+                  onChange={handleTaskFormChange}
+                  placeholder="예: JIRA 로그인 오류 이슈 확인"
+                  value={taskForm.title}
+                />
+              </label>
+              {editingTaskId && (
+                <div className="workbench-detail-grid">
+                  <label>
+                    상태
+                    <select name="status" onChange={handleTaskFormChange} value={taskForm.status}>
+                      {taskStatusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    우선순위
+                    <select name="priority" onChange={handleTaskFormChange} value={taskForm.priority}>
+                      <option value="low">낮음</option>
+                      <option value="normal">보통</option>
+                      <option value="high">높음</option>
+                    </select>
+                  </label>
+                  <label>
+                    마감일
+                    <input name="deadline" onChange={handleTaskFormChange} type="date" value={taskForm.deadline} />
+                  </label>
+                  <label>
+                    프로젝트
+                    <input name="projectName" onChange={handleTaskFormChange} placeholder="예: 고객지원 개선" value={taskForm.projectName} />
+                  </label>
+                  <label className="workbench-full-field">
+                    JIRA 링크
+                    <input name="jiraUrl" onChange={handleTaskFormChange} placeholder="https://회사주소.atlassian.net/browse/ABC-123" type="url" value={taskForm.jiraUrl} />
+                  </label>
+                  <label className="workbench-full-field">
+                    메모
+                    <textarea name="note" onChange={handleTaskFormChange} placeholder="필요할 때만 메모를 남겨주세요." rows="3" value={taskForm.note} />
+                  </label>
+                </div>
+              )}
+              {taskMessage && <p className="workbench-form-message" role="alert">{taskMessage}</p>}
+              <div className="workbench-form-actions">
+                <button className="workbench-primary" type="submit">
+                  <Check size={17} aria-hidden="true" />
+                  {editingTaskId ? "변경 저장" : "추가하기"}
+                </button>
+                <button className="workbench-secondary" onClick={closeTaskForm} type="button">취소</button>
+              </div>
+            </form>
+          )}
+
+          <div className="workbench-task-section">
+            <div className="workbench-section-heading">
+              <div>
+                <span className="workbench-form-kicker">FOCUS LIST</span>
+                <h3>{selectedStatus === "all" ? "아직 끝내지 않은 일" : taskStatusLabels[selectedStatus]}</h3>
+              </div>
+              <button className="workbench-secondary" onClick={openTaskCreator} type="button">
+                <Plus size={16} aria-hidden="true" />
+                빠르게 추가
+              </button>
+            </div>
+
+            {activeTasks.length === 0 ? (
+              <div className="workbench-empty-state">
+                <div className="workbench-empty-icon"><Check size={24} aria-hidden="true" /></div>
+                <h3>{selectedStatus === "all" ? "아직 등록한 일이 없습니다" : "이 상태의 업무가 없습니다"}</h3>
+                <p>{selectedStatus === "all" ? "오늘 해야 할 일 하나를 적어보면 업무가 선명해집니다." : "다른 상태의 업무를 확인하거나 새 일을 추가해보세요."}</p>
+                {selectedStatus === "all" && <button className="workbench-primary" onClick={openTaskCreator} type="button"><Plus size={17} aria-hidden="true" />첫 할 일 추가하기</button>}
+              </div>
+            ) : (
+              <div className="workbench-task-list">
+                {activeTasks.map((task) => (
+                  <article className={`workbench-task-card status-${task.status}`} key={task.id}>
+                    <div className="workbench-task-main">
+                      <span className={`workbench-status-badge status-${task.status}`}>{taskStatusLabels[task.status]}</span>
+                      <h4>{task.title}</h4>
+                      <div className="workbench-task-meta">
+                        {task.projectName && <span>{task.projectName}</span>}
+                        {task.deadline && <span>마감 {formatTaskDate(task.deadline)}</span>}
+                        {task.jiraUrl && <a href={task.jiraUrl} rel="noreferrer" target="_blank"><ExternalLink size={13} aria-hidden="true" />JIRA 열기</a>}
+                      </div>
+                    </div>
+                    <div className="workbench-task-actions">
+                      <button onClick={() => handleStatusChange(task.id, "done")} type="button"><Check size={15} aria-hidden="true" />완료</button>
+                      {task.status !== "in_progress" && <button onClick={() => handleStatusChange(task.id, "in_progress")} type="button">진행 중</button>}
+                      {task.status !== "blocked" && <button onClick={() => handleStatusChange(task.id, "blocked")} type="button">막힘</button>}
+                      <button aria-label={`${task.title} 수정`} onClick={() => openTaskEditor(task)} type="button"><Pencil size={14} aria-hidden="true" />수정</button>
+                      <button aria-label={`${task.title} 삭제`} className="danger-button" onClick={() => handleDeleteTask(task.id)} type="button"><Trash2 size={14} aria-hidden="true" />삭제</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {completedTasks.length > 0 && (
+            <div className="workbench-completed">
+              <button className="workbench-completed-toggle" onClick={() => setShowCompleted((current) => !current)} type="button">
+                <span><Check size={16} aria-hidden="true" />완료한 일 {completedTasks.length}개</span>
+                <ChevronDown className={showCompleted ? "rotated" : ""} size={18} aria-hidden="true" />
+              </button>
+              {showCompleted && <div className="workbench-completed-list">{completedTasks.map((task) => <div className="workbench-completed-item" key={task.id}><Check size={15} aria-hidden="true" /><span>{task.title}</span><button onClick={() => handleDeleteTask(task.id)} type="button">삭제</button></div>)}</div>}
+            </div>
+          )}
+
+          <div className="workbench-ai-bridge">
+            <div>
+              <span className="workbench-form-kicker">NEXT WORKSPACE</span>
+              <h3>AI 작업도 이어서 해보세요</h3>
+              <p>자료 정리, AI 질문 만들기, 답변 검토는 아래 작업 공간에서 계속할 수 있습니다.</p>
+            </div>
+            <ArrowRight size={20} aria-hidden="true" />
+          </div>
+        </section>
+
         <header className="page-header">
           <div>
             <p className="eyebrow">WORKBENCH LIVE</p>
