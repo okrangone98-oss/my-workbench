@@ -257,21 +257,26 @@ async function extractPdfText(file) {
   const worker = await import("pdfjs-dist/build/pdf.worker.mjs?url");
   pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
 
-  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
-  const pages = [];
+  const loadingTask = pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
+  try {
+    const pdf = await loadingTask.promise;
+    const pages = [];
 
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-    const page = await pdf.getPage(pageNumber);
-    const textContent = await page.getTextContent();
-    const text = textContent.items
-      .map((item) => ("str" in item ? item.str : ""))
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-    pages.push(`[${pageNumber}쪽]\n${text}`);
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const textContent = await page.getTextContent();
+      const text = textContent.items
+        .map((item) => ("str" in item ? item.str : ""))
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+      pages.push(`[${pageNumber}쪽]\n${text}`);
+    }
+
+    return pages.join("\n\n");
+  } finally {
+    await loadingTask.destroy();
   }
-
-  return pages.join("\n\n");
 }
 
 function renderPolicy({ title, content }) {
