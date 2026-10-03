@@ -55,8 +55,31 @@ test("PKCE uses random S256 verifier and state without persisting an API key", a
   assert.equal(url.origin, "https://openrouter.ai");
   assert.equal(url.searchParams.get("code_challenge_method"), "S256");
   assert.equal(url.searchParams.get("state"), pending.state);
-  assert.equal(url.searchParams.get("callback_url"), location.href);
+  const callback = new URL(url.searchParams.get("callback_url"));
+  assert.equal(callback.origin + callback.pathname, location.href);
+  assert.equal(callback.searchParams.get("state"), pending.state);
   assert.equal(pending.key, undefined);
+});
+
+test("provider adding only code to the registered callback completes the PKCE round trip", async () => {
+  const stored = new Map();
+  const storage = { setItem: (key, value) => stored.set(key, value), getItem: (key) => stored.get(key), removeItem: (key) => stored.delete(key) };
+  const location = { href: "https://example.github.io/my-workbench/?old=value#section", assign: (url) => { location.target = url; } };
+  await startConnection({ storage, location });
+  const auth = new URL(location.target);
+  const callback = new URL(auth.searchParams.get("callback_url"));
+  callback.searchParams.set("code", "provider-code");
+  let cleaned;
+  const key = await finishConnection({ storage, location: { href: callback.href }, history: { replaceState: (_, __, url) => { cleaned = url; } }, fetchImpl: async (_, init) => {
+    const body = JSON.parse(init.body);
+    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body.code_verifier));
+    assert.equal(Buffer.from(hash).toString("base64url"), auth.searchParams.get("code_challenge"));
+    assert.equal(body.code, "provider-code");
+    return response({ key: "temporary-test-key" });
+  } });
+  assert.equal(key, "temporary-test-key");
+  assert.equal(cleaned, "/my-workbench/");
+  assert.equal(stored.size, 0);
 });
 
 test("OAuth state mismatch removes callback data and never exchanges a key", async () => {

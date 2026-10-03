@@ -43,6 +43,7 @@ export async function startConnection({ storage = sessionStorage, location = win
   const challenge = base64url(new Uint8Array(await cryptoImpl.subtle.digest("SHA-256", new TextEncoder().encode(verifier))));
   const callback = new URL(location.href);
   callback.search = ""; callback.hash = "";
+  callback.searchParams.set("state", state);
   storage.setItem(AUTH_SESSION_KEY, JSON.stringify({ verifier, state, createdAt: Date.now() }));
   const auth = new URL("https://openrouter.ai/auth");
   auth.search = new URLSearchParams({ callback_url: callback.href, code_challenge: challenge, code_challenge_method: "S256", state, key_label: "My Workbench Free AI" }).toString();
