@@ -25,6 +25,7 @@ import {
   X,
 } from "lucide-react";
 import "./styles.css";
+import ExperimentNotebook from "./ExperimentNotebook.jsx";
 import {
   createTask,
   deleteTask,
@@ -1709,4 +1710,17 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+function WorkbenchRoot() {
+  const [workspace, setWorkspace] = useState("notebook");
+  return <>
+    <nav className="workspace-tabs" aria-label="작업 공간 선택">
+      <strong>My Workbench</strong>
+      <button type="button" aria-pressed={workspace === "notebook"} onClick={() => setWorkspace("notebook")}>AI 소식 실험 노트</button>
+      <button type="button" aria-pressed={workspace === "workbench"} onClick={() => setWorkspace("workbench")}>오늘의 업무 · 작업 도구</button>
+    </nav>
+    <div hidden={workspace !== "notebook"}><ExperimentNotebook /></div>
+    {workspace === "workbench" && <App />}
+  </>;
+}
+
+createRoot(document.getElementById("root")).render(<WorkbenchRoot />);

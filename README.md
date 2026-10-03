@@ -1,6 +1,49 @@
 ﻿# my-workbench
 
-개인+회사 디지털 자산 통합 관리 작업본부 저장소.
+AI 소식을 내 업무의 작은 실험으로 바꾸고, 결과와 학습을 축적하는 개인 작업 벤치.
+
+## AI 소식 실험 노트
+
+웹 첫 화면에서 Threads·기사 원문을 기록하고, 내 관심과 업무에 맞는 실험을 준비할 수 있습니다. 기존 업무 대시보드와 자료 정리 도구는 `오늘의 업무 · 작업 도구` 탭에서 사용합니다.
+
+1. `소식 기록하기`로 제목과 링크를 남기고 원문을 붙여넣거나 TXT·MD·PDF 파일에서 읽습니다. 링크만으로 Threads 게시물을 자동 수집하지 않습니다. 스캔 PDF는 OCR이 필요합니다.
+2. 주장, 공식 출처, 직접 확인한 근거와 내 업무에 적용할 문제를 기록합니다. 근거 확인 상태는 사용자가 직접 결정합니다.
+3. 소식 1~5개를 선택하고 `내 관심과 기준`을 입력합니다.
+4. `무료 AI 연결`에서 개인 OpenRouter 계정을 연결합니다. 선택한 자료를 보내는 데 동의하고 무료 AI로 실험을 추천받습니다. 연결 없이 ChatGPT·Codex 요청문을 복사할 수도 있습니다.
+5. 제안을 확인하고 `이 실험 준비하기`로 실험과 성공 기준을 저장합니다. 실제 결과, 소요 시간, 수정 횟수, 배운 개념과 다음 행동을 남깁니다.
+6. JSON 백업을 내려받아 G드라이브 개발 작업 폴더에 보관합니다. 다른 브라우저에서는 백업을 복원합니다. 중복 기록은 더 최근 수정본을 유지합니다.
+
+기록과 초안은 이 브라우저에 저장되며 자동 기기 동기화는 없습니다. 원본 파일은 서버에 업로드하지 않지만, AI 추천을 요청하면 선택한 글과 관심 설정이 OpenRouter와 해당 모델 제공자에게 전달됩니다. AI는 인터넷 검색이나 공식 출처 검증을 수행하지 않습니다. 원문과 맞지 않는 AI 인용은 별도로 표시합니다.
+
+### 무료 API 사용
+
+`openrouter/free`만 호출합니다. 요청 전에 공개 모델 목록에서 가격 0을 확인하고, 공급자 가격 상한도 0으로 지정합니다. 유료 모델, 검색 플러그인, 자동 재시도는 사용하지 않습니다. 무료 한도·가용성이 바뀌면 요청을 멈추고 이유를 표시합니다. 실제 선택된 모델명은 결과에 표시합니다.
+
+OpenRouter 계정 연결에는 PKCE S256과 state 검증을 사용합니다. 연결 키는 앱 메모리에만 남고 새로고침 시 사라집니다. 개인 키 임시 입력도 지원하며 localStorage·JSON 백업·GitHub에 키를 저장하지 않습니다. 연결 해제는 앱의 키를 지우고, 발급된 키의 취소는 OpenRouter의 `내 연결 키 관리`에서 합니다.
+
+- [OpenRouter 무료 라우터](https://openrouter.ai/openrouter/free)
+- [계정 연결 공식 문서](https://openrouter.ai/docs/guides/overview/auth/oauth)
+
+### 실행과 배포
+
+```bash
+npm ci
+npm run dev:web
+npm test --workspace @my-work-bench/web
+npm run build
+npm run lint
+```
+
+GitHub Pages 주소: https://okrangone98-oss.github.io/my-workbench/
+
+`.github/workflows/pages.yml`이 PR의 테스트와 빌드를 검증하고, main 반영 후 Pages에 배포합니다. Pages의 Source는 GitHub Actions입니다. Node 22를 사용하며 Pages 하위 경로는 `VITE_BASE_PATH=/my-workbench/`로 빌드합니다. 이 값은 공개 경로 설정이며 비밀키를 넣는 변수가 아닙니다. 서버·유료 API·새 의존성 없이 정적 사이트로 운영합니다.
+
+Pages 결과를 로컬에서 볼 때는 빌드와 미리보기 모두 같은 경로를 지정합니다.
+
+```bash
+VITE_BASE_PATH=/my-workbench/ npm run build:web
+VITE_BASE_PATH=/my-workbench/ npm run preview --workspace @my-work-bench/web
+```
 
 ## 목표
 
